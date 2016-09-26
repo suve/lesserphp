@@ -1,5 +1,5 @@
 {
-    "name": "leafo/lessphp",
+    "name": "marcus-schwarz/lessphp",
     "type": "library",
     "description": "lessphp is a compiler for LESS written in PHP.",
     "homepage": "http://leafo.net/lessphp/",
@@ -12,6 +12,11 @@
             "name": "Leaf Corcoran",
             "email": "leafot@gmail.com",
             "homepage": "http://leafo.net"
+        },
+        {
+            "name": "Marcus Schwarz",
+            "email": "github@maswaba.de",
+            "homepage": "https://www.maswaba.de"
         }
     ],
     "autoload": {

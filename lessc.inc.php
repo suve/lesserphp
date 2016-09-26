@@ -38,7 +38,7 @@
  * handling things like indentation.
  */
 class lessc {
-	static public $VERSION = "v0.4.0";
+	static public $VERSION = "v0.4.1";
 	static protected $TRUE = array("keyword", "true");
 	static protected $FALSE = array("keyword", "false");
 
