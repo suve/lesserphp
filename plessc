@@ -242,9 +242,7 @@ try {
 		file_put_contents($fout, $out);
 	}
 
-} catch (exception $ex) {
+} catch (\Exception $ex) {
 	err($fa.$ex->getMessage());
 	exit(1);
 }
-
-?>

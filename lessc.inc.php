@@ -7,6 +7,7 @@
  * LESS CSS compiler, adapted from http://lesscss.org
  *
  * Copyright 2013, Leaf Corcoran <leafot@gmail.com>
+ * Copyright 2016, Marcus Schwarz <github@maswaba.de>
  * Licensed under MIT or GPLv3, see LICENSE
  */
 
@@ -570,7 +571,7 @@ class lessc {
 			return true; // not having enough is handled above
 		} else {
 			$numMatched = $i + 1;
-			// greater than becuase default values always match
+			// greater than because default values always match
 			return $numMatched >= count($orderedArgs);
 		}
 	}
@@ -1861,7 +1862,7 @@ class lessc {
 			$parser->count = 0;
 			$parser->buffer = (string)$strValue;
 			if (!$parser->propertyValue($value)) {
-				throw new Exception("failed to parse passed in variable $name: $strValue");
+				throw new \Exception("failed to parse passed in variable $name: $strValue");
 			}
 
 			$this->set($name, $value);
@@ -1907,7 +1908,7 @@ class lessc {
 
 	public function compileFile($fname, $outFname = null) {
 		if (!is_readable($fname)) {
-			throw new Exception('load error: failed to find '.$fname);
+			throw new \Exception('load error: failed to find '.$fname);
 		}
 
 		$pi = pathinfo($fname);
@@ -2018,7 +2019,7 @@ class lessc {
 
 		if ($str == null) {
 			if (empty($this->_parseFile)) {
-				throw new exception("nothing to parse");
+				throw new \Exception("nothing to parse");
 			}
 
 			$out = $this->compileFile($this->_parseFile);
@@ -2096,7 +2097,7 @@ class lessc {
 		if ($this->sourceLoc >= 0) {
 			$this->sourceParser->throwError($msg, $this->sourceLoc);
 		}
-		throw new exception($msg);
+		throw new \Exception($msg);
 	}
 
 	// compile file $in to file $out if $in is newer than $out
@@ -2365,7 +2366,7 @@ class lessc_parser {
 
 		// TODO report where the block was opened
 		if ( !property_exists($this->env, 'parent') || !is_null($this->env->parent) )
-			throw new exception('parse error: unclosed block');
+			throw new \Exception('parse error: unclosed block');
 
 		return $this->env;
 	}
@@ -2506,7 +2507,7 @@ class lessc_parser {
 		if ($this->literal('}', false)) {
 			try {
 				$block = $this->pop();
-			} catch (exception $e) {
+			} catch (\Exception $e) {
 				$this->seek($s);
 				$this->throwError($e->getMessage());
 			}
@@ -3550,14 +3551,14 @@ class lessc_parser {
 
 		// TODO this depends on $this->count
 		if ($this->peek("(.*?)(\n|$)", $m, $count)) {
-			throw new exception("$msg: failed at `$m[1]` $loc");
+			throw new \Exception("$msg: failed at `$m[1]` $loc");
 		} else {
-			throw new exception("$msg: $loc");
+			throw new \Exception("$msg: $loc");
 		}
 	}
 
 	protected function pushBlock($selectors=null, $type=null) {
-		$b = new stdclass;
+		$b = new \stdClass();
 		$b->parent = $this->env;
 
 		$b->type = $type;
