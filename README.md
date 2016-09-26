@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/leafo/lessphp.svg?branch=master)](https://travis-ci.org/leafo/lessphp)
+[![Build Status](https://travis-ci.org/MarcusSchwarz/lessphp.svg?branch=0.5.1)](https://travis-ci.org/MarcusSchwarz/lessphp)
 
-# lessphp v0.5.0
+# lessphp v0.5.1
 ### <http://leafo.net/lessphp>
 
 `lessphp` is a compiler for LESS written in PHP. The documentation is great,
@@ -48,7 +48,7 @@ If there any problem compiling your code, an exception is thrown with a helpful 
 <?php
 try {
   $less->compile("invalid LESS } {");
-} catch (exception $e) {
+} catch (\Exception $e) {
   echo "fatal error: " . $e->getMessage();
 }
 ```
