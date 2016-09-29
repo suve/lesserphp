@@ -58,7 +58,7 @@ class lessc {
 
 	static public $lengths_to_base = array( 1, 3779.52755906, 37.79527559, 3.77952756, 96, 1.33333333, 16  );
 	public $importDisabled = false;
-	public $importDir = '';
+	public $importDir = array();
 
 	protected $numberPrecision = null;
 
@@ -212,7 +212,7 @@ class lessc {
 			$this->compileNestedBlock($block, array($name));
 			break;
 		default:
-			$this->throwError("unknown block type: $block->type\n");
+            $block->parser->throwError("unknown block type: $block->type\n", $block->count);
 		}
 	}
 
@@ -723,7 +723,7 @@ class lessc {
 			$mixins = $this->findBlocks($block, $path, $orderedArgs, $keywordArgs);
 
 			if ($mixins === null) {
-				$this->throwError("{$prop[1][0]} is undefined");
+                $block->parser->throwError("{$prop[1][0]} is undefined", $block->count);
 			}
 
 			foreach ($mixins as $mixin) {
@@ -809,7 +809,7 @@ class lessc {
 
 			break;
 		default:
-			$this->throwError("unknown op: {$prop[0]}\n");
+            $block->parser->throwError("unknown op: {$prop[0]}\n", $block->count);
 		}
 	}
 
@@ -1311,7 +1311,13 @@ class lessc {
 	        $inputColor = ( isset($args[2][0]) ) ? $this->assertColor($args[2][0])  : $lightColor;
 	        $darkColor  = ( isset($args[2][1]) ) ? $this->assertColor($args[2][1])  : $darkColor;
 	        $lightColor = ( isset($args[2][2]) ) ? $this->assertColor($args[2][2])  : $lightColor;
-	        $threshold  = ( isset($args[2][3]) ) ? $this->assertNumber($args[2][3]) : $threshold;
+            if( isset($args[2][3]) ) {
+                if( isset($args[2][3][2]) && $args[2][3][2] == '%' ) {
+                    $args[2][3][1] /= 100;
+                    unset($args[2][3][2]);
+ 	        	}
+ 		        $threshold = $this->assertNumber($args[2][3]);
+ 	        }
 	    }
 	    else {
 	        $inputColor  = $this->assertColor($args);
@@ -3719,6 +3725,14 @@ class lessc_parser {
 
 		$b->props = array();
 		$b->children = array();
+
+        // add a reference to the parser so
+        // we can access the parser to throw errors
+        // or retrieve the sourceName of this block.
+        $b->parser = $this;
+
+        // so we know the position of this block
+        $b->count = $this->count;
 
 		$this->env = $b;
 		return $b;
