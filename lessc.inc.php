@@ -696,6 +696,7 @@ class lessc {
 			list(, $child) = $prop;
 			$this->compileBlock($child);
 			break;
+		case 'ruleset':
 		case 'mixin':
 			list(, $path, $args, $suffix) = $prop;
 
@@ -724,6 +725,11 @@ class lessc {
 
 			if ($mixins === null) {
                 $block->parser->throwError("{$prop[1][0]} is undefined", $block->count);
+			}
+
+			if(strpos($prop[1][0], "$") === 0) {
+				//Use Ruleset Logic - Only last element
+				$mixins = array(array_pop($mixins));
 			}
 
 			foreach ($mixins as $mixin) {
@@ -2683,6 +2689,16 @@ class lessc_parser {
 				} elseif ($this->isDirective($dirName, $this->lineDirectives)) {
 					if ($this->propertyValue($dirValue) && $this->end()) {
 						$this->append(array("directive", $dirName, $dirValue));
+						return true;
+					}
+				} elseif ($this->literal(":", true)) {
+					//Ruleset Definition
+					if (($this->openString("{", $dirValue, null, array(";")) || true) &&
+							$this->literal("{"))
+					{
+						$dir = $this->pushBlock($this->fixTags(array("@".$dirName)));
+						$dir->name = $dirName;
+						if (isset($dirValue)) $dir->value = $dirValue;
 						return true;
 					}
 				}
