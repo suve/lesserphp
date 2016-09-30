@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/MarcusSchwarz/lessphp.svg?branch=0.5.1)](https://travis-ci.org/MarcusSchwarz/lessphp)
+[![Build Status](https://travis-ci.org/MarcusSchwarz/lesserphp.svg?branch=master)](https://travis-ci.org/MarcusSchwarz/lesserphp)
 
 # lesserphp v0.5.1
 ### <http://github.com/MarcusSchwarz/lesserphp>
