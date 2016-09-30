@@ -1,5 +1,5 @@
 {
-    "name": "marcus-schwarz/lesserphp",
+    "name": "marcusschwarz/lesserphp",
     "type": "library",
     "description": "lesserphp is a compiler for LESS written in PHP based on leafo's lessphp.",
     "homepage": "http://leafo.net/lessphp/",
@@ -26,7 +26,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.5.1-dev"
+            "dev-master": "0.6.0-dev"
         }
     },
     "require-dev": {
