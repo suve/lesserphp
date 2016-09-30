@@ -1,4 +1,4 @@
-# lessphp v0.5.1
+# lesserphp v0.5.1
 
 Originally written by Leaf Corcoran, obviously abandoned circa 2014
 https://github.com/leafo/lessphp
@@ -6,6 +6,7 @@ https://github.com/leafo/lessphp
 Last version provided by Leaf was 0.5.0
 
 ### v.0.5.1
+* 2016-09-30: renaming it to lesserphp for easier distinction
 * 2016-09-30: applying some pull requests of the origin repository
   * https://github.com/leafo/lessphp/pull/584
   * https://github.com/leafo/lessphp/pull/607

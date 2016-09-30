@@ -6,7 +6,7 @@
 
 <div style="margin-bottom: 1em;">$index</div>
 
-**lessphp** is a compiler that generates CSS from a superset language which
+**lesserphp** is a compiler that generates CSS from a superset language which
 adds a collection of convenient features often seen in other languages. All CSS
 is compatible with LESS, so you can start using new features with your existing CSS.
 
@@ -15,21 +15,21 @@ as a drop in replacement for PHP projects.
 
 ## Getting Started
 
-The homepage for **lessphp** can be found at [http://leafo.net/lessphp/][1].
+The homepage for **lesserphp** can be found at [http://leafo.net/lessphp/][1].
 
 You can follow development at the project's [GitHub][2].
 
-Including **lessphp** in your project is as simple as dropping the single
+Including **lesserphp** in your project is as simple as dropping the single
 include file into your code base and running the appropriate compile method as
 described in the [PHP Interface](#php_interface).
 
   [1]: http://leafo.net/lessphp "lessphp homepage"
-  [2]: https://github.com/leafo/lessphp "lessphp GitHub page"
+  [2]: https://github.com/MarcusSchwarz/lesserphp "lesserphp GitHub page"
 
 ## Installation
 
-**lessphp** is distributed entirely in a single stand-alone file. Download the
-latest version from either [the homepage][1] or [GitHub][2].
+**lesserphp** is distributed entirely in a single stand-alone file. Download the
+latest version from [GitHub][2].
 
 Development versions can also be downloading from GitHub.
 
@@ -38,9 +38,9 @@ include it. That's it! you're ready to begin.
 
 ## The Language
 
-**lessphp** is very easy to learn because it generally functions how you would
+**lesserphp** is very easy to learn because it generally functions how you would
 expect it to. If you feel something is challenging or missing, feel free to
-open an issue on the [bug tracker](https://github.com/leafo/lessphp/issues).
+open an issue on the [bug tracker](https://github.com/MarcusSchwarz/lesserphp/issues).
 
 It is also easy to learn because any standards-compliant CSS code is valid LESS
 code. You are free to gradually enhance your existing CSS code base with LESS
@@ -894,7 +894,7 @@ function that let's you unquote any value. It is called `e`.
 
 ### Built In Functions
 
-**lessphp** has a collection of built in functions:
+**lesserphp** has a collection of built in functions:
 
 * `e(str)` -- returns a string without the surrounding quotes.
   See [String Unquoting](#string_unquoting)
@@ -973,7 +973,7 @@ function that let's you unquote any value. It is called `e`.
 
 ## PHP Interface
 
-When working with **lessphp** from PHP, the typical flow is to create a new
+When working with **lesserphp** from PHP, the typical flow is to create a new
 instance of `lessc`, configure it how you like, then tell it to compile
 something using one built in compile methods.
 
@@ -1279,9 +1279,9 @@ overwriting the whole thing.
 
 ### Custom Functions
 
-**lessphp** has a simple extension interface where you can implement user
+**lesserphp** has a simple extension interface where you can implement user
 functions that will be exposed in LESS code during the compile. They can be a
-little tricky though because you need to work with the **lessphp** type system.
+little tricky though because you need to work with the **lesserphp** type system.
 
 The two methods we are interested in are `registerFunction` and
 `unregisterFunction`. `registerFunction` takes two arguments, a name and a
@@ -1323,7 +1323,7 @@ like so:
 Now let's talk about the `double` function itself.
 
 Although a little verbose, the implementation gives us some insight on the type
-system. All values in **lessphp** are stored in an array where the 0th element
+system. All values in **lesserphp** are stored in an array where the 0th element
 is a string representing the type, and the other elements make up the
 associated data for that value.
 
@@ -1331,17 +1331,17 @@ The best way to get an understanding of the system is to register is dummy
 function which does a `var_dump` on the argument. Try passing the function
 different values from LESS and see what the results are.
 
-The return value of the registered function must also be a **lessphp** type,
+The return value of the registered function must also be a **lesserphp** type,
 but if it is a string or numeric value, it will automatically be coerced into
 an appropriate typed value. In our example, we reconstruct the value with our
 modifications while making sure that we preserve the original type.
 
-The instance of **lessphp** itself is sent to the registered function as the
+The instance of **lesserphp** itself is sent to the registered function as the
 second argument in addition to the arguments array.
 
 ## Command Line Interface
 
-**lessphp** comes with a command line script written in PHP that can be used to
+**lesserphp** comes with a command line script written in PHP that can be used to
 invoke the compiler from the terminal. On Linux and OSX, all you need to do is
 place `plessc` and `lessc.inc.php` somewhere in your PATH (or you can run it in
 the current directory as well). On windows you'll need a copy of `php.exe` to

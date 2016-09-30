@@ -1,7 +1,7 @@
 {
-    "name": "marcus-schwarz/lessphp",
+    "name": "marcus-schwarz/lesserphp",
     "type": "library",
-    "description": "lessphp is a compiler for LESS written in PHP.",
+    "description": "lesserphp is a compiler for LESS written in PHP based on leafo's lessphp.",
     "homepage": "http://leafo.net/lessphp/",
     "license": [
         "MIT",

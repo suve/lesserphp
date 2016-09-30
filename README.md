@@ -1,9 +1,10 @@
 [![Build Status](https://travis-ci.org/MarcusSchwarz/lessphp.svg?branch=0.5.1)](https://travis-ci.org/MarcusSchwarz/lessphp)
 
-# lessphp v0.5.1
-### <http://leafo.net/lessphp>
+# lesserphp v0.5.1
+### <http://github.com/MarcusSchwarz/lesserphp>
 
-`lessphp` is a compiler for LESS written in PHP. The documentation is great,
+`lesserphp` is a compiler for LESS written in PHP. It is based on lessphp bei leafo.
+The documentation is great,
 so check it out: <http://leafo.net/lessphp/docs/>.
 
 Here's a quick tutorial:
@@ -12,7 +13,7 @@ Here's a quick tutorial:
 
 The only file required is `lessc.inc.php`, so copy that to your include directory.
 
-The typical flow of **lessphp** is to create a new instance of `lessc`,
+The typical flow of **lesserphp** is to create a new instance of `lessc`,
 configure it how you like, then tell it to compile something using one built in
 compile methods.
 
