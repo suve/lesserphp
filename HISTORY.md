@@ -6,6 +6,8 @@ https://github.com/leafo/lessphp
 Last version provided by Leaf was 0.5.0
 
 ### v.0.5.1
+* 2016-09-30: applying some pull requests of the origin repository
+  * https://github.com/leafo/lessphp/pull/584
 * 2016-09-29: applying some pull requests of the origin repository
   * https://github.com/leafo/lessphp/pull/590
   * https://github.com/leafo/lessphp/pull/523
