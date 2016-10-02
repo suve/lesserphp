@@ -1,53 +1,63 @@
 <?php
 error_reporting(E_ALL);
 
-require realpath(dirname(__FILE__)).'/../lessc.inc.php';
+//require realpath(dirname(__FILE__)) . '/../lessc.inc.php';
 
 // sorts the selectors in stylesheet in order to normalize it for comparison
 
 $exe = array_shift($argv); // remove filename
 
 if (!$fname = array_shift($argv)) {
-	$fname = "php://stdin";
+    $fname = "php://stdin";
 }
 
-class lesscNormalized extends lessc {
-	public $numberPrecision = 3;
+class lesscNormalized extends \LesserPhp\Compiler
+{
 
-	public function compileValue($value) {
-		if ($value[0] == "raw_color") {
-			$value = $this->coerceColor($value);
-		}
+    public $numberPrecision = 3;
 
-		return parent::compileValue($value);
-	}
+    public function compileValue($value)
+    {
+        if ($value[0] == "raw_color") {
+            $value = $this->coerceColor($value);
+        }
+
+        return parent::compileValue($value);
+    }
 }
 
-class SortingFormatter extends lessc_formatter_lessjs {
-	function sortKey($block) {
-		if (!isset($block->sortKey)) {
-			sort($block->selectors, SORT_STRING);
-			$block->sortKey = implode(",", $block->selectors);
-		}
+class SortingFormatter extends \LesserPhp\Formatter\Lessjs
+{
 
-		return $block->sortKey;
-	}
+    public function sortKey($block)
+    {
+        if (!isset($block->sortKey)) {
+            sort($block->selectors, SORT_STRING);
+            $block->sortKey = implode(",", $block->selectors);
+        }
 
-	function sortBlock($block) {
-		usort($block->children, function($a, $b) {
-			$sort = strcmp($this->sortKey($a), $this->sortKey($b));
-			if ($sort == 0) {
-				// TODO
-			}
-			return $sort;
-		});
+        return $block->sortKey;
+    }
 
-	}
+    public function sortBlock($block)
+    {
+        usort($block->children, function ($a, $b) {
+            $sort = strcmp($this->sortKey($a), $this->sortKey($b));
+            if ($sort == 0) {
+                // TODO
+            }
 
-	function block($block) {
-		$this->sortBlock($block);
-		return parent::block($block);
-	}
+            return $sort;
+        });
+
+    }
+
+    public function block($block)
+    {
+        $this->sortBlock($block);
+
+        return parent::block($block);
+    }
 
 }
 
