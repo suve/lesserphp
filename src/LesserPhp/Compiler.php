@@ -64,14 +64,14 @@ class Compiler
     public $importDisabled = false;
     public $importDir = [];
 
-    protected $numberPrecision = null;
+    protected $numberPrecision;
 
     protected $allParsedFiles = [];
 
     // set to the parser that generated the current line when compiling
     // so we know how to create error messages
-    protected $sourceParser = null;
-    protected $sourceLoc = null;
+    protected $sourceParser;
+    protected $sourceLoc;
 
     static protected $nextImportId = 0; // uniquely identify imports
 

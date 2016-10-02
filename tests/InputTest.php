@@ -1,6 +1,16 @@
 <?php
 
-require_once __DIR__ . "/../lessc.inc.php";
+/**
+ * lesserphp
+ * https://www.maswaba.de/lesserphp
+ *
+ * LESS CSS compiler, adapted from http://lesscss.org
+ *
+ * Copyright 2013, Leaf Corcoran <leafot@gmail.com>
+ * Copyright 2016, Marcus Schwarz <github@maswaba.de>
+ * Licensed under MIT or GPLv3, see LICENSE
+ * @package LesserPhp
+ */
 
 // Runs all the tests in inputs/ and compares their output to ouputs/
 
@@ -24,9 +34,11 @@ class InputTest extends PHPUnit_Framework_TestCase
         "inputs_lessjs" => "outputs_lessjs",
     ];
 
+    private $less;
+
     public function setUp()
     {
-        $this->less = new lessc();
+        $this->less = new \LesserPhp\Compiler();
         $this->less->importDir = array_map(function ($path) {
             return __DIR__ . "/" . $path;
         }, self::$importDirs);
@@ -98,4 +110,3 @@ class InputTest extends PHPUnit_Framework_TestCase
         return __DIR__ . "/" . $out;
     }
 }
-

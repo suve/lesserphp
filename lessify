@@ -1,23 +1,34 @@
 #!/usr/bin/env php
 <?php
 
-if (php_sapi_name() != "cli") {
-	err($fa.$argv[0]." must be run in the command line.");
-	exit(1);
+/**
+ * lesserphp
+ * https://www.maswaba.de/lesserphp
+ *
+ * LESS CSS compiler, adapted from http://lesscss.org
+ *
+ * Copyright 2013, Leaf Corcoran <leafot@gmail.com>
+ * Copyright 2016, Marcus Schwarz <github@maswaba.de>
+ * Licensed under MIT or GPLv3, see LICENSE
+ * @package LesserPhp
+ */
+
+if (php_sapi_name() !== 'cli') {
+    err($fa . $argv[0] . ' must be run in the command line.');
+    exit(1);
 }
+
+require __DIR__.'/vendor/autoload.php';
+
 $exe = array_shift($argv); // remove filename
 
 if (!$fname = array_shift($argv)) {
-	exit("Usage: ".$exe." input-file\n");
+    exit('Usage: ' . $exe . ' input-file' . PHP_EOL);
 }
 
-require "lessify.inc.php";
-
-try  {
-	$parser = new lessify($fname);
-	echo $parser->parse();
+try {
+    $parser = new \LesserPhp\Lessify($fname);
+    echo $parser->parse();
 } catch (\Exception $e) {
-	exit("Fatal error: ".$e->getMessage()."\n");
+    exit('Fatal error: ' . $e->getMessage() . PHP_EOL);
 }
-
-

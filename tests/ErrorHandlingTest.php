@@ -1,17 +1,29 @@
 <?php
-require_once __DIR__ . "/../lessc.inc.php";
 
+/**
+ * lesserphp
+ * https://www.maswaba.de/lesserphp
+ *
+ * LESS CSS compiler, adapted from http://lesscss.org
+ *
+ * Copyright 2013, Leaf Corcoran <leafot@gmail.com>
+ * Copyright 2016, Marcus Schwarz <github@maswaba.de>
+ * Licensed under MIT or GPLv3, see LICENSE
+ * @package LesserPhp
+ */
 class ErrorHandlingTest extends PHPUnit_Framework_TestCase
 {
 
+    private $less;
+
     public function setUp()
     {
-        $this->less = new lessc();
+        $this->less = new \LesserPhp\Compiler();
     }
 
     public function compile()
     {
-        $source = join("\n", func_get_args());
+        $source = implode("\n", func_get_args());
 
         return $this->less->compile($source);
     }

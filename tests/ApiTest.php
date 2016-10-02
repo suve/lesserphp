@@ -1,13 +1,24 @@
 <?php
 
-require_once __DIR__ . "/../lessc.inc.php";
-
+/**
+ * lesserphp
+ * https://www.maswaba.de/lesserphp
+ *
+ * LESS CSS compiler, adapted from http://lesscss.org
+ *
+ * Copyright 2013, Leaf Corcoran <leafot@gmail.com>
+ * Copyright 2016, Marcus Schwarz <github@maswaba.de>
+ * Licensed under MIT or GPLv3, see LICENSE
+ * @package LesserPhp
+ */
 class ApiTest extends PHPUnit_Framework_TestCase
 {
 
+    private $less;
+
     public function setUp()
     {
-        $this->less = new lessc();
+        $this->less = new \LesserPhp\Compiler();
         $this->less->importDir = [__DIR__ . "/inputs/test-imports"];
     }
 
@@ -93,7 +104,7 @@ EOD;
 
     public function testOldInterface()
     {
-        $this->less = new lessc(__DIR__ . "/inputs/hi.less");
+        $this->less = new \LesserPhp\Compiler(__DIR__ . "/inputs/hi.less");
         $out = $this->less->parse(["hello" => "10px"]);
         $this->assertEquals(trim($out), trim('
 div:before {
@@ -204,5 +215,4 @@ div span, div .big, div hello.world, pre span, pre .big, pre hello.world {
     {
         return trim($this->less->parse($str));
     }
-
 }
