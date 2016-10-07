@@ -75,11 +75,16 @@ class Compiler
 
     static protected $nextImportId = 0; // uniquely identify imports
 
+    /** @var \LesserPhp\Parser */
+    private $parser;
+    /** @var \LesserPhp\Formatter\FormatterInterface */
+    private $formatter;
+
     // attempts to find the path of an import url, returns null for css files
     protected function findImport($url)
     {
         foreach ((array)$this->importDir as $dir) {
-            $full = $dir . (substr($dir, -1) != '/' ? '/' : '') . $url;
+            $full = $dir . (substr($dir, -1) !== '/' ? '/' : '') . $url;
             if ($this->fileExists($file = $full . '.less') || $this->fileExists($file = $full)) {
                 return $file;
             }
@@ -428,7 +433,7 @@ class Compiler
     protected function multiplyMedia($env, $childQueries = null)
     {
         if (is_null($env) ||
-            !empty($env->block->type) && $env->block->type != "media"
+            (!empty($env->block->type) && $env->block->type !== 'media')
         ) {
             return $childQueries;
         }
@@ -1289,7 +1294,7 @@ class Compiler
         }
         list($color, $delta) = $args[2];
         $color = $this->assertColor($color);
-        $delta = floatval($delta[1]);
+        $delta = (float)$delta[1];
 
         return [$color, $delta];
     }
@@ -1683,7 +1688,7 @@ class Compiler
             $i = 0;
             foreach ($rawComponents as $c) {
                 $val = $this->reduce($c);
-                $val = isset($val[1]) ? floatval($val[1]) : 0;
+                $val = isset($val[1]) ? (float)$val[1] : 0;
 
                 if ($i == 0) {
                     $clamp = 360;
@@ -1712,13 +1717,13 @@ class Compiler
                     if ($c[0] == "number" && $c[2] == "%") {
                         $components[] = 255 * ($c[1] / 100);
                     } else {
-                        $components[] = floatval($c[1]);
+                        $components[] = (float)$c[1];
                     }
                 } elseif ($i == 4) {
                     if ($c[0] == "number" && $c[2] == "%") {
                         $components[] = 1.0 * ($c[1] / 100);
                     } else {
-                        $components[] = floatval($c[1]);
+                        $components[] = (float)$c[1];
                     }
                 } else {
                     break;
@@ -2167,7 +2172,7 @@ class Compiler
         return $this->fixColor($out);
     }
 
-    function lib_red($color)
+    protected function lib_red($color)
     {
         $color = $this->coerceColor($color);
         if (is_null($color)) {
@@ -2177,7 +2182,7 @@ class Compiler
         return $color[1];
     }
 
-    function lib_green($color)
+    protected function lib_green($color)
     {
         $color = $this->coerceColor($color);
         if (is_null($color)) {
@@ -2187,7 +2192,7 @@ class Compiler
         return $color[2];
     }
 
-    function lib_blue($color)
+    protected function lib_blue($color)
     {
         $color = $this->coerceColor($color);
         if (is_null($color)) {
@@ -2370,10 +2375,16 @@ class Compiler
         }
     }
 
+    /**
+     * @param string $string
+     * @param string $name
+     *
+     * @return string
+     */
     public function compile($string, $name = null)
     {
         $locale = setlocale(LC_NUMERIC, 0);
-        setlocale(LC_NUMERIC, "C");
+        setlocale(LC_NUMERIC, 'C');
 
         $this->parser = $this->makeParser($name);
         $root = $this->parser->parse($string);
@@ -2433,15 +2444,15 @@ class Compiler
      * @param boolean $force
      *
      * @return string Compiled CSS results
-     * @throws Exception
+     * @throws \Exception
      */
     public function checkedCachedCompile($in, $out, $force = false)
     {
         if (!is_file($in) || !is_readable($in)) {
-            throw new Exception('Invalid or unreadable input file specified.');
+            throw new \Exception('Invalid or unreadable input file specified.');
         }
         if (is_dir($out) || !is_writable(file_exists($out) ? $out : dirname($out))) {
-            throw new Exception('Invalid or unwritable output file specified.');
+            throw new \Exception('Invalid or unwritable output file specified.');
         }
 
         $outMeta = $out . '.meta';
@@ -2585,9 +2596,12 @@ class Compiler
         $this->formatterName = $name;
     }
 
+    /**
+     * @return FormatterInterface
+     */
     protected function newFormatter()
     {
-        $className = "Lessjs";
+        $className = 'Lessjs';
         if (!empty($this->formatterName)) {
             if (!is_string($this->formatterName)) {
                 return $this->formatterName;
@@ -2648,6 +2662,10 @@ class Compiler
 
     /**
      * Uses the current value of $this->count to show line and line number
+     *
+     * @param string $msg
+     *
+     * @throws \Exception
      */
     public function throwError($msg = null)
     {

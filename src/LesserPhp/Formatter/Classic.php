@@ -13,7 +13,7 @@ namespace LesserPhp\Formatter;
  * Licensed under MIT or GPLv3, see LICENSE
  * @package LesserPhp
  */
-class Classic
+class Classic implements FormatterInterface
 {
 
     public $indentChar = '  ';

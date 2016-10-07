@@ -73,6 +73,12 @@ class Parser
 
     // caches preg escaped literals
     static protected $literalCache = [];
+    /** @var int */
+    public $count;
+    /** @var int */
+    private $line;
+    /** @var array */
+    private $seenComments;
 
     public function __construct($lessc, $sourceName = null)
     {
@@ -105,7 +111,7 @@ class Parser
 
         $this->env = null; // block stack
         $this->buffer = $this->writeComments ? $buffer : $this->removeComments($buffer);
-        $this->pushSpecialBlock("root");
+        $this->pushSpecialBlock('root');
         $this->eatWhiteDefault = true;
         $this->seenComments = [];
 
@@ -121,7 +127,7 @@ class Parser
             ;
         }
 
-        if ($this->count != strlen($this->buffer)) {
+        if ($this->count !== strlen($this->buffer)) {
             $this->throwError();
         }
 

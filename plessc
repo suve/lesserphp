@@ -3,6 +3,8 @@
 // Command line utility to compile LESS to STDOUT
 // Leaf Corcoran <leafot@gmail.com>, 2013
 
+require_once __DIR__ . '/vendor/autoload.php';
+
 $exe = array_shift($argv); // remove filename
 
 $HELP = <<<EOT
@@ -46,7 +48,7 @@ if (has("h", "help")) {
 error_reporting(E_ALL);
 $path = realpath(dirname(__FILE__)) . '/';
 
-$VERSION = lessc::$VERSION;
+$VERSION = \LesserPhp\Compiler::$VERSION;
 
 $fa = "Fatal Error: ";
 function err($msg)
@@ -62,7 +64,7 @@ if (php_sapi_name() != "cli") {
 function make_less($fname = null)
 {
     global $opts;
-    $l = new lessc($fname);
+    $l = new \LesserPhp\Compiler($fname);
 
     if (has("f")) {
         $format = $opts["f"];
