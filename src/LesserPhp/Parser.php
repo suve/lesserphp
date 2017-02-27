@@ -49,16 +49,16 @@ class Parser
         ['/border-radius$/i', '/^font$/i'];
 
     protected $blockDirectives = [
-        "font-face",
-        "keyframes",
-        "page",
-        "-moz-document",
-        "viewport",
-        "-moz-viewport",
-        "-o-viewport",
-        "-ms-viewport",
+        'font-face',
+        'keyframes',
+        'page',
+        '-moz-document',
+        'viewport',
+        '-moz-viewport',
+        '-o-viewport',
+        '-ms-viewport',
     ];
-    protected $lineDirectives = ["charset"];
+    protected $lineDirectives = ['charset'];
 
     /**
      * if we are in parens we can be more liberal with whitespace around
@@ -80,7 +80,7 @@ class Parser
     /** @var array */
     private $seenComments;
 
-    public function __construct($lessc, $sourceName = null)
+    public function __construct(Compiler $lessc, $sourceName = null)
     {
         $this->eatWhiteDefault = true;
         // reference to less needed for vPrefix, mPrefix, and parentSelector
@@ -92,12 +92,12 @@ class Parser
 
         if (!self::$operatorString) {
             self::$operatorString =
-                '(' . implode('|', array_map(['\LesserPhp\Compiler', 'preg_quote'],
+                '(' . implode('|', array_map(['\LesserPhp\Compiler', 'pregQuote'],
                     array_keys(self::$precedence))) . ')';
 
-            $commentSingle = \LesserPhp\Compiler::preg_quote(self::$commentSingle);
-            $commentMultiLeft = \LesserPhp\Compiler::preg_quote(self::$commentMultiLeft);
-            $commentMultiRight = \LesserPhp\Compiler::preg_quote(self::$commentMultiRight);
+            $commentSingle = \LesserPhp\Compiler::pregQuote(self::$commentSingle);
+            $commentMultiLeft = \LesserPhp\Compiler::pregQuote(self::$commentMultiLeft);
+            $commentMultiRight = \LesserPhp\Compiler::pregQuote(self::$commentMultiRight);
 
             self::$commentMulti = $commentMultiLeft . '.*?' . $commentMultiRight;
             self::$whitePattern = '/' . $commentSingle . '[^\n]*\s*|(' . self::$commentMulti . ')\s*|\s+/Ais';
@@ -128,6 +128,8 @@ class Parser
         }
 
         if ($this->count !== strlen($this->buffer)) {
+//            var_dump($this->count);
+//            var_dump($this->buffer);
             $this->throwError();
         }
 
@@ -256,6 +258,40 @@ class Parser
             $this->seek($s);
         }
 
+
+        if ($this->literal('&', false)) {
+            $this->count--;
+            if ($this->literal('&:extend')) {
+                // hierauf folgt was in runden klammern, und zwar das element, das erweitert werden soll
+                // heißt also, das was in klammern steht wird um die aktuellen klassen erweitert
+                /*
+Aus
+
+nav ul {
+  &:extend(.inline);
+  background: blue;
+}
+.inline {
+  color: red;
+}
+
+
+Wird:
+
+nav ul {
+  background: blue;
+}
+.inline,
+nav ul {
+  color: red;
+}
+
+                 */
+//                echo "Here we go";
+            }
+        }
+
+
         // setting a variable
         if ($this->variable($var) && $this->assign() &&
             $this->propertyValue($value) && $this->end()
@@ -364,7 +400,7 @@ class Parser
     {
         // TODO: cache pattern in parser
         $pattern = implode("|",
-            array_map(['\LesserPhp\Compiler', "preg_quote"], $directives));
+            array_map(['\LesserPhp\Compiler', "pregQuote"], $directives));
         $pattern = '/^(-[a-z-]+-)?(' . $pattern . ')$/i';
 
         return preg_match($pattern, $dirname);
@@ -723,7 +759,7 @@ class Parser
         $this->eatWhiteDefault = false;
 
         $stop = ["'", '"', "@{", $end];
-        $stop = array_map(['\LesserPhp\Compiler', "preg_quote"], $stop);
+        $stop = array_map(['\LesserPhp\Compiler', "pregQuote"], $stop);
         // $stop[] = self::$commentMulti;
 
         if (!is_null($rejectStrs)) {
@@ -803,14 +839,14 @@ class Parser
 
         // look for either ending delim , escape, or string interpolation
         $patt = '([^\n]*?)(@\{|\\\\|' .
-            \LesserPhp\Compiler::preg_quote($delim) . ')';
+            \LesserPhp\Compiler::pregQuote($delim) . ')';
 
         $oldWhite = $this->eatWhiteDefault;
         $this->eatWhiteDefault = false;
 
         while ($this->match($patt, $m, false)) {
             $content[] = $m[1];
-            if ($m[2] == "@{") {
+            if ($m[2] === "@{") {
                 $this->count -= strlen($m[2]);
                 if ($this->interpolation($inter, false)) {
                     $content[] = $inter;
@@ -818,7 +854,7 @@ class Parser
                     $this->count += strlen($m[2]);
                     $content[] = "@{"; // ignore it
                 }
-            } elseif ($m[2] == '\\') {
+            } elseif ($m[2] === '\\') {
                 $content[] = $m[2];
                 if ($this->literal($delim, false)) {
                     $content[] = $delim;
@@ -1332,7 +1368,6 @@ class Parser
     }
 
     // a bunch of guards that are and'd together
-    // TODO rename to guardGroup
     protected function guardGroup(&$guardGroup)
     {
         $s = $this->seek();
@@ -1396,7 +1431,7 @@ class Parser
         }
 
         if (!isset(self::$literalCache[$what])) {
-            self::$literalCache[$what] = \LesserPhp\Compiler::preg_quote($what);
+            self::$literalCache[$what] = \LesserPhp\Compiler::pregQuote($what);
         }
 
         return $this->match(self::$literalCache[$what], $m, $eatWhitespace);
@@ -1441,7 +1476,7 @@ class Parser
         } else {
             $validChars = $allowNewline ? "." : "[^\n]";
         }
-        if (!$this->match('(' . $validChars . '*?)' . \LesserPhp\Compiler::preg_quote($what), $m, !$until)) {
+        if (!$this->match('(' . $validChars . '*?)' . \LesserPhp\Compiler::pregQuote($what), $m, !$until)) {
             return false;
         }
         if ($until) {

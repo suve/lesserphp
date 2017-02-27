@@ -17,8 +17,8 @@ namespace LesserPhp;
 class Easyparse
 {
 
-    private $buffer;
-    private $count;
+    protected $buffer;
+    protected $count;
 
     /**
      * Easyparse constructor.

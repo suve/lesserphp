@@ -32,6 +32,8 @@ class Classic implements FormatterInterface
 
     public $compressColors = false;
 
+    private $indentLevel;
+
     /**
      * Classic constructor.
      */

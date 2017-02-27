@@ -70,6 +70,9 @@ class Compiler
 
     // set to the parser that generated the current line when compiling
     // so we know how to create error messages
+    /**
+     * @var \LesserPhp\Parser
+     */
     protected $sourceParser;
     protected $sourceLoc;
 
@@ -79,6 +82,10 @@ class Compiler
     private $parser;
     /** @var \LesserPhp\Formatter\FormatterInterface */
     private $formatter;
+    /**
+     * @var \LesserPhp\NodeEnv
+     */
+    private $env;
 
     // attempts to find the path of an import url, returns null for css files
     protected function findImport($url)
@@ -98,7 +105,7 @@ class Compiler
         return is_file($name);
     }
 
-    static public function compressList($items, $delim)
+    public static function compressList($items, $delim)
     {
         if (!isset($items[1]) && isset($items[0])) {
             return $items[0];
@@ -107,14 +114,14 @@ class Compiler
         }
     }
 
-    static public function preg_quote($what)
+    public static function pregQuote($what)
     {
         return preg_quote($what, '/');
     }
 
     protected function tryImport($importPath, $parentBlock, $out)
     {
-        if ($importPath[0] == "function" && $importPath[1] == "url") {
+        if ($importPath[0] === 'function' && $importPath[1] === 'url') {
             $importPath = $this->flattenList($importPath[2]);
         }
 
@@ -137,7 +144,7 @@ class Compiler
         }
 
         if ($this->importDisabled) {
-            return [false, "/* import disabled */"];
+            return [false, '/* import disabled */'];
         }
 
         if (isset($this->allParsedFiles[realpath($realPath)])) {
@@ -150,7 +157,7 @@ class Compiler
 
         // set the parents of all the block props
         foreach ($root->props as $prop) {
-            if ($prop[0] == "block") {
+            if ($prop[0] === 'block') {
                 $prop[1]->parent = $parentBlock;
             }
         }
@@ -172,12 +179,12 @@ class Compiler
         $dir = $pi["dirname"];
 
         list($top, $bottom) = $this->sortProps($root->props, true);
-        $this->compileImportedProps($top, $parentBlock, $out, $parser, $dir);
+        $this->compileImportedProps($top, $parentBlock, $out, $dir);
 
         return [true, $bottom, $parser, $dir];
     }
 
-    protected function compileImportedProps($props, $block, $out, $sourceParser, $importDir)
+    protected function compileImportedProps($props, $block, $out, $importDir)
     {
         $oldSourceParser = $this->sourceParser;
 
@@ -243,11 +250,11 @@ class Compiler
 
     protected function compileCSSBlock($block)
     {
-        $env = $this->pushEnv();
+        $env = $this->pushEnv($this->env);
 
         $selectors = $this->compileSelectors($block->tags);
-        $env->selectors = $this->multiplySelectors($selectors);
-        $out = $this->makeOutputBlock(null, $env->selectors);
+        $env->setSelectors($this->multiplySelectors($selectors));
+        $out = $this->makeOutputBlock(null, $env->getSelectors());
 
         $this->scope->children[] = $out;
         $this->compileProps($block, $out);
@@ -258,7 +265,7 @@ class Compiler
 
     protected function compileMedia($media)
     {
-        $env = $this->pushEnv($media);
+        $env = $this->pushEnv($this->env, $media);
         $parentScope = $this->mediaParent($this->scope);
 
         $query = $this->compileMediaQuery($this->multiplyMedia($env));
@@ -296,7 +303,7 @@ class Compiler
 
     protected function compileNestedBlock($block, $selectors)
     {
-        $this->pushEnv($block);
+        $this->pushEnv($this->env, $block);
         $this->scope = $this->makeOutputBlock($block->type, $selectors);
         $this->scope->parent->children[] = $this->scope;
 
@@ -308,7 +315,7 @@ class Compiler
 
     protected function compileRoot($root)
     {
-        $this->pushEnv();
+        $this->pushEnv($this->env);
         $this->scope = $this->makeOutputBlock($root->type);
         $this->compileProps($root, $this->scope);
         $this->popEnv();
@@ -430,21 +437,21 @@ class Compiler
         return $out;
     }
 
-    protected function multiplyMedia($env, $childQueries = null)
+    protected function multiplyMedia(NodeEnv $env = null, $childQueries = null)
     {
         if (is_null($env) ||
-            (!empty($env->block->type) && $env->block->type !== 'media')
+            (!empty($env->getBlock()->type) && $env->getBlock()->type !== 'media')
         ) {
             return $childQueries;
         }
 
         // plain old block, skip
-        if (empty($env->block->type)) {
-            return $this->multiplyMedia($env->parent, $childQueries);
+        if (empty($env->getBlock()->type)) {
+            return $this->multiplyMedia($env->getParent(), $childQueries);
         }
 
         $out = [];
-        $queries = $env->block->queries;
+        $queries = $env->getBlock()->queries;
         if (is_null($childQueries)) {
             $out = $queries;
         } else {
@@ -455,7 +462,7 @@ class Compiler
             }
         }
 
-        return $this->multiplyMedia($env->parent, $out);
+        return $this->multiplyMedia($env->getParent(), $out);
     }
 
     protected function expandParentSelectors(&$tag, $replace)
@@ -476,11 +483,11 @@ class Compiler
         $env = $this->env;
         $selectors = null;
         while ($env !== null) {
-            if (isset($env->selectors)) {
-                $selectors = $env->selectors;
+            if ($env->getSelectors() !== null) {
+                $selectors = $env->getSelectors();
                 break;
             }
-            $env = $env->parent;
+            $env = $env->getParent();
         }
 
         return $selectors;
@@ -549,11 +556,11 @@ class Compiler
             $groupPassed = false;
             foreach ($block->guards as $guardGroup) {
                 foreach ($guardGroup as $guard) {
-                    $this->pushEnv();
+                    $this->pushEnv($this->env);
                     $this->zipSetArgs($block->args, $orderedArgs, $keywordArgs);
 
                     $negate = false;
-                    if ($guard[0] == "negate") {
+                    if ($guard[0] === "negate") {
                         $guard = $guard[1];
                         $negate = true;
                     }
@@ -591,7 +598,7 @@ class Compiler
         if ($keywordArgs) {
             $remainingArgs = [];
             foreach ($block->args as $arg) {
-                if ($arg[0] == "arg" && isset($keywordArgs[$arg[1]])) {
+                if ($arg[0] === "arg" && isset($keywordArgs[$arg[1]])) {
                     continue;
                 }
 
@@ -662,7 +669,7 @@ class Compiler
 
         if (isset($searchIn->children[$name])) {
             $blocks = $searchIn->children[$name];
-            if (count($path) == 1) {
+            if (count($path) === 1) {
                 $matches = $this->patternMatchAll($blocks, $orderedArgs, $keywordArgs, $seen);
                 if (!empty($matches)) {
                     // This will return all blocks that match in the closest
@@ -700,7 +707,7 @@ class Compiler
 
         $i = 0;
         foreach ($args as $a) {
-            if ($a[0] == "arg") {
+            if ($a[0] === "arg") {
                 if (isset($keywordValues[$a[1]])) {
                     // has keyword arg
                     $value = $keywordValues[$a[1]];
@@ -727,13 +734,13 @@ class Compiler
 
         // check for a rest
         $last = end($args);
-        if ($last[0] == "rest") {
+        if ($last[0] === "rest") {
             $rest = array_slice($orderedValues, count($args) - 1);
             $this->set($last[1], $this->reduce(["list", " ", $rest]));
         }
 
         // wow is this the only true use of PHP's + operator for arrays?
-        $this->env->arguments = $assignedValues + $orderedValues;
+        $this->env->setArguments($assignedValues + $orderedValues);
     }
 
     // compile a prop and update $lines or $blocks appropriately
@@ -763,7 +770,6 @@ class Compiler
                 $orderedArgs = [];
                 $keywordArgs = [];
                 foreach ((array)$args as $arg) {
-                    $argval = null;
                     switch ($arg[0]) {
                         case "arg":
                             if (!isset($arg[2])) {
@@ -800,14 +806,14 @@ class Compiler
                     $haveScope = false;
                     if (isset($mixin->parent->scope)) {
                         $haveScope = true;
-                        $mixinParentEnv = $this->pushEnv();
+                        $mixinParentEnv = $this->pushEnv($this->env);
                         $mixinParentEnv->storeParent = $mixin->parent->scope;
                     }
 
                     $haveArgs = false;
                     if (isset($mixin->args)) {
                         $haveArgs = true;
-                        $this->pushEnv();
+                        $this->pushEnv($this->env);
                         $this->zipSetArgs($mixin->args, $orderedArgs, $keywordArgs);
                     }
 
@@ -818,7 +824,7 @@ class Compiler
 
                     foreach ($this->sortProps($mixin->props) as $subProp) {
                         if ($suffix !== null &&
-                            $subProp[0] == "assign" &&
+                            $subProp[0] === "assign" &&
                             is_string($subProp[1]) &&
                             $subProp[1]{0} != $this->vPrefix
                         ) {
@@ -857,27 +863,23 @@ class Compiler
                 list(, $importPath, $importId) = $prop;
                 $importPath = $this->reduce($importPath);
 
-                if (!isset($this->env->imports)) {
-                    $this->env->imports = [];
-                }
-
                 $result = $this->tryImport($importPath, $block, $out);
 
-                $this->env->imports[$importId] = $result === false ?
+                $this->env->addImports($importId, $result === false ?
                     [false, "@import " . $this->compileValue($importPath) . ";"] :
-                    $result;
+                    $result);
 
                 break;
             case "import_mixin":
                 list(, $importId) = $prop;
-                $import = $this->env->imports[$importId];
+                $import = $this->env->getImports($importId);
                 if ($import[0] === false) {
                     if (isset($import[1])) {
                         $out->lines[] = $import[1];
                     }
                 } else {
                     list(, $bottom, $parser, $importDir) = $import;
-                    $this->compileImportedProps($bottom, $block, $out, $parser, $importDir);
+                    $this->compileImportedProps($bottom, $block, $out, $importDir);
                 }
 
                 break;
@@ -943,7 +945,7 @@ class Compiler
                 $g = round($g);
                 $b = round($b);
 
-                if (count($value) == 5 && $value[4] != 1) { // rgba
+                if (count($value) === 5 && $value[4] != 1) { // rgba
                     return 'rgba(' . $r . ',' . $g . ',' . $b . ',' . $value[4] . ')';
                 }
 
@@ -991,7 +993,7 @@ class Compiler
         list($value, $to) = $this->assertArgs($args, 2, "convert");
 
         // If it's a keyword, grab the string version instead
-        if (is_array($to) && $to[0] == "keyword") {
+        if (is_array($to) && $to[0] === "keyword") {
             $to = $to[1];
         }
 
@@ -1012,7 +1014,7 @@ class Compiler
         $min_index = 0;
         $min_value = $values[0][1];
 
-        for ($a = 0; $a < sizeof($values); $a++) {
+        for ($a = 0, $max = count($values); $a < $max; $a++) {
             $converted = $this->convert($values[$a], $first_format);
 
             if ($converted[1] < $min_value) {
@@ -1033,7 +1035,7 @@ class Compiler
         $max_index = 0;
         $max_value = $values[0][1];
 
-        for ($a = 0; $a < sizeof($values); $a++) {
+        for ($a = 0, $max = count($values); $a < $max; $a++) {
             $converted = $this->convert($values[$a], $first_format);
 
             if ($converted[1] > $max_value) {
@@ -1091,19 +1093,19 @@ class Compiler
         list($list, $idx) = $this->assertArgs($value, 2, "extract");
         $idx = $this->assertNumber($idx);
         // 1 indexed
-        if ($list[0] == "list" && isset($list[2][$idx - 1])) {
+        if ($list[0] === "list" && isset($list[2][$idx - 1])) {
             return $list[2][$idx - 1];
         }
     }
 
     protected function lib_isnumber($value)
     {
-        return $this->toBool($value[0] == "number");
+        return $this->toBool($value[0] === "number");
     }
 
     protected function lib_isstring($value)
     {
-        return $this->toBool($value[0] == "string");
+        return $this->toBool($value[0] === "string");
     }
 
     protected function lib_iscolor($value)
@@ -1113,27 +1115,27 @@ class Compiler
 
     protected function lib_iskeyword($value)
     {
-        return $this->toBool($value[0] == "keyword");
+        return $this->toBool($value[0] === "keyword");
     }
 
     protected function lib_ispixel($value)
     {
-        return $this->toBool($value[0] == "number" && $value[2] == "px");
+        return $this->toBool($value[0] === "number" && $value[2] === "px");
     }
 
     protected function lib_ispercentage($value)
     {
-        return $this->toBool($value[0] == "number" && $value[2] == "%");
+        return $this->toBool($value[0] === "number" && $value[2] === "%");
     }
 
     protected function lib_isem($value)
     {
-        return $this->toBool($value[0] == "number" && $value[2] == "em");
+        return $this->toBool($value[0] === "number" && $value[2] === "em");
     }
 
     protected function lib_isrem($value)
     {
-        return $this->toBool($value[0] == "number" && $value[2] == "rem");
+        return $this->toBool($value[0] === "number" && $value[2] === "rem");
     }
 
     protected function lib_rgbahex($color)
@@ -1210,7 +1212,7 @@ class Compiler
 
     protected function lib__sprintf($args)
     {
-        if ($args[0] != "list") {
+        if ($args[0] !== "list") {
             return $args;
         }
         $values = $args[2];
@@ -1230,12 +1232,12 @@ class Compiler
 
                 $i++;
                 $rep = $this->compileValue($this->lib_e($val));
-                $template = preg_replace('/' . self::preg_quote($match) . '/',
+                $template = preg_replace('/' . self::pregQuote($match) . '/',
                     $rep, $template, 1);
             }
         }
 
-        $d = $string[0] == "string" ? $string[1] : '"';
+        $d = $string[0] === "string" ? $string[1] : '"';
 
         return ["string", $d, [$template]];
     }
@@ -1256,7 +1258,7 @@ class Compiler
 
     protected function lib_round($arg)
     {
-        if ($arg[0] != "list") {
+        if ($arg[0] !== "list") {
             $value = $this->assertNumber($arg);
 
             return ["number", round($value), $arg[2]];
@@ -1270,7 +1272,7 @@ class Compiler
 
     protected function lib_unit($arg)
     {
-        if ($arg[0] == "list") {
+        if ($arg[0] === "list") {
             list($number, $newUnit) = $arg[2];
 
             return [
@@ -1289,7 +1291,7 @@ class Compiler
      */
     public function colorArgs($args)
     {
-        if ($args[0] != 'list' || count($args[2]) < 2) {
+        if ($args[0] !== 'list' || count($args[2]) < 2) {
             return [['color', 0, 0, 0], 0];
         }
         list($color, $delta) = $args[2];
@@ -1420,7 +1422,7 @@ class Compiler
     // http://sass-lang.com/docs/yardoc/Sass/Script/Functions.html#mix-instance_method
     protected function lib_mix($args)
     {
-        if ($args[0] != "list" || count($args[2]) < 2) {
+        if ($args[0] !== "list" || count($args[2]) < 2) {
             $this->throwError("mix expects (color1, color2, weight)");
         }
 
@@ -1463,12 +1465,12 @@ class Compiler
         $lightColor = ['color', 255, 255, 255];
         $threshold = 0.43;
 
-        if ($args[0] == 'list') {
+        if ($args[0] === 'list') {
             $inputColor = (isset($args[2][0])) ? $this->assertColor($args[2][0]) : $lightColor;
             $darkColor = (isset($args[2][1])) ? $this->assertColor($args[2][1]) : $darkColor;
             $lightColor = (isset($args[2][2])) ? $this->assertColor($args[2][2]) : $lightColor;
             if (isset($args[2][3])) {
-                if (isset($args[2][3][2]) && $args[2][3][2] == '%') {
+                if (isset($args[2][3][2]) && $args[2][3][2] === '%') {
                     $args[2][3][1] /= 100;
                     unset($args[2][3][2]);
                 }
@@ -1517,7 +1519,7 @@ class Compiler
 
     public function assertNumber($value, $error = "expecting number")
     {
-        if ($value[0] == "number") {
+        if ($value[0] === "number") {
             return $value[1];
         }
         $this->throwError($error);
@@ -1528,7 +1530,7 @@ class Compiler
         if ($expectedArgs == 1) {
             return $value;
         } else {
-            if ($value[0] !== "list" || $value[1] != ",") {
+            if ($value[0] !== "list" || $value[1] !== ",") {
                 $this->throwError("expecting list");
             }
             $values = $value[2];
@@ -1547,7 +1549,7 @@ class Compiler
 
     public function assertMinArgs($value, $expectedMinArgs, $name = "")
     {
-        if ($value[0] !== "list" || $value[1] != ",") {
+        if ($value[0] !== "list" || $value[1] !== ",") {
             $this->throwError("expecting list");
         }
         $values = $value[2];
@@ -1565,7 +1567,7 @@ class Compiler
 
     protected function toHSL($color)
     {
-        if ($color[0] == 'hsl') {
+        if ($color[0] === 'hsl') {
             return $color;
         }
 
@@ -1636,7 +1638,7 @@ class Compiler
      */
     protected function toRGB($color)
     {
-        if ($color[0] == 'color') {
+        if ($color[0] === 'color') {
             return $color;
         }
 
@@ -1678,12 +1680,12 @@ class Compiler
     protected function funcToColor($func)
     {
         $fname = $func[1];
-        if ($func[2][0] != 'list') {
+        if ($func[2][0] !== 'list') {
             return false;
         } // need a list of arguments
         $rawComponents = $func[2][2];
 
-        if ($fname == 'hsl' || $fname == 'hsla') {
+        if ($fname === 'hsl' || $fname === 'hsla') {
             $hsl = ['hsl'];
             $i = 0;
             foreach ($rawComponents as $c) {
@@ -1708,19 +1710,19 @@ class Compiler
 
             return $this->toRGB($hsl);
 
-        } elseif ($fname == 'rgb' || $fname == 'rgba') {
+        } elseif ($fname === 'rgb' || $fname === 'rgba') {
             $components = [];
             $i = 1;
             foreach ($rawComponents as $c) {
                 $c = $this->reduce($c);
                 if ($i < 4) {
-                    if ($c[0] == "number" && $c[2] == "%") {
+                    if ($c[0] === "number" && $c[2] === "%") {
                         $components[] = 255 * ($c[1] / 100);
                     } else {
                         $components[] = (float)$c[1];
                     }
                 } elseif ($i == 4) {
-                    if ($c[0] == "number" && $c[2] == "%") {
+                    if ($c[0] === "number" && $c[2] === "%") {
                         $components[] = 1.0 * ($c[1] / 100);
                     } else {
                         $components[] = (float)$c[1];
@@ -1750,7 +1752,7 @@ class Compiler
                 $var = $this->compileValue($reduced);
                 $res = $this->reduce(["variable", $this->vPrefix . $var]);
 
-                if ($res[0] == "raw_color") {
+                if ($res[0] === "raw_color") {
                     $res = $this->coerceColor($res);
                 }
 
@@ -1788,7 +1790,7 @@ class Compiler
             case "string":
                 foreach ($value[2] as &$part) {
                     if (is_array($part)) {
-                        $strip = $part[0] == "variable";
+                        $strip = $part[0] === "variable";
                         $part = $this->reduce($part);
                         if ($strip) {
                             $part = $this->lib_e($part);
@@ -1808,7 +1810,7 @@ class Compiler
                 }
 
                 list(, $name, $args) = $value;
-                if ($name == "%") {
+                if ($name === "%") {
                     $name = "_sprintf";
                 }
 
@@ -1816,11 +1818,11 @@ class Compiler
                     $this->libFunctions[$name] : [$this, 'lib_' . str_replace('-', '_', $name)];
 
                 if (is_callable($f)) {
-                    if ($args[0] == 'list') {
+                    if ($args[0] === 'list') {
                         $args = self::compressList($args[2], $args[1]);
                     }
 
-                    $ret = call_user_func($f, $this->reduce($args, true), $this);
+                    $ret = $f($this->reduce($args, true), $this);
 
                     if (is_null($ret)) {
                         return [
@@ -1853,7 +1855,7 @@ class Compiler
                 list(, $op, $exp) = $value;
                 $exp = $this->reduce($exp);
 
-                if ($exp[0] == "number") {
+                if ($exp[0] === "number") {
                     switch ($op) {
                         case "+":
                             return $exp;
@@ -1893,7 +1895,7 @@ class Compiler
                 $c = ["color", 0, 0, 0];
                 $colorStr = substr($value[1], 1);
                 $num = hexdec($colorStr);
-                $width = strlen($colorStr) == 3 ? 16 : 256;
+                $width = strlen($colorStr) === 3 ? 16 : 256;
 
                 for ($i = 3; $i > 0; $i--) { // 3 2 1
                     $t = $num % $width;
@@ -1935,7 +1937,7 @@ class Compiler
     // turn list of length 1 into value type
     protected function flattenList($value)
     {
-        if ($value[0] == "list" && count($value[2]) == 1) {
+        if ($value[0] === "list" && count($value[2]) === 1) {
             return $this->flattenList($value[2][0]);
         }
 
@@ -1971,15 +1973,15 @@ class Compiler
         $rtype = $right[0];
 
         // operators that work on all types
-        if ($op == "and") {
+        if ($op === "and") {
             return $this->toBool($left == self::$TRUE && $right == self::$TRUE);
         }
 
-        if ($op == "=") {
+        if ($op === "=") {
             return $this->toBool($this->eq($left, $right));
         }
 
-        if ($op == "+" && !is_null($str = $this->stringConcatenate($left, $right))) {
+        if ($op === "+" && !is_null($str = $this->stringConcatenate($left, $right))) {
             return $str;
         }
 
@@ -2007,7 +2009,7 @@ class Compiler
     protected function stringConcatenate($left, $right)
     {
         if ($strLeft = $this->coerceString($left)) {
-            if ($right[0] == "string") {
+            if ($right[0] === "string") {
                 $right[1] = "";
             }
             $strLeft[2][] = $right;
@@ -2051,7 +2053,7 @@ class Compiler
         if (in_array($from, self::$times)) {
             if (in_array($to, self::$times)) {
                 // currently only ms and s are valid
-                if ($to == "ms") {
+                if ($to === "ms") {
                     $result = $value * 1000;
                 } else {
                     $result = $value / 1000;
@@ -2066,13 +2068,13 @@ class Compiler
         // lastly check for an angle
         if (in_array($from, self::$angles)) {
             // convert whatever angle it is into degrees
-            if ($from == "rad") {
+            if ($from === "rad") {
                 $deg = rad2deg($value);
             } else {
-                if ($from == "turn") {
+                if ($from === "turn") {
                     $deg = $value * 360;
                 } else {
-                    if ($from == "grad") {
+                    if ($from === "grad") {
                         $deg = $value / (400 / 360);
                     } else {
                         $deg = $value;
@@ -2081,19 +2083,19 @@ class Compiler
             }
 
             // Then convert it from degrees into desired unit
-            if ($to == "deg") {
+            if ($to === "deg") {
                 $result = $deg;
             }
 
-            if ($to == "rad") {
+            if ($to === "rad") {
                 $result = deg2rad($deg);
             }
 
-            if ($to == "turn") {
+            if ($to === "turn") {
                 $result = $value / 360;
             }
 
-            if ($to == "grad") {
+            if ($to === "grad") {
                 $result = $value * (400 / 360);
             }
 
@@ -2123,14 +2125,14 @@ class Compiler
 
     protected function op_number_color($op, $lft, $rgt)
     {
-        if ($op == '+' || $op == '*') {
+        if ($op === '+' || $op === '*') {
             return $this->op_color_number($op, $rgt, $lft);
         }
     }
 
     protected function op_color_number($op, $lft, $rgt)
     {
-        if ($rgt[0] == '%') {
+        if ($rgt[0] === '%') {
             $rgt[1] /= 100;
         }
 
@@ -2259,12 +2261,12 @@ class Compiler
     }
 
     // the state of execution
-    protected function pushEnv($block = null)
+    protected function pushEnv($parent, $block = null)
     {
-        $e = new \stdClass();
-        $e->parent = $this->env;
-        $e->store = [];
-        $e->block = $block;
+        $e = new \LesserPhp\NodeEnv();
+        $e->setParent($parent);
+        $e->setBlock($block);
+        $e->setStore([]);
 
         $this->env = $e;
 
@@ -2275,7 +2277,7 @@ class Compiler
     protected function popEnv()
     {
         $old = $this->env;
-        $this->env = $this->env->parent;
+        $this->env = $this->env->getParent();
 
         return $old;
     }
@@ -2283,7 +2285,7 @@ class Compiler
     // set something in the current env
     protected function set($name, $value)
     {
-        $this->env->store[$name] = $value;
+        $this->env->addStore($name, $value);
     }
 
 
@@ -2295,22 +2297,22 @@ class Compiler
         // track scope to evaluate
         $scope_secondary = [];
 
-        $isArguments = $name == $this->vPrefix . 'arguments';
+        $isArguments = $name === $this->vPrefix . 'arguments';
         while ($current) {
-            if ($isArguments && isset($current->arguments)) {
-                return ['list', ' ', $current->arguments];
+            if ($isArguments && count($current->getArguments()) > 0) {
+                return ['list', ' ', $current->getArguments()];
             }
 
-            if (isset($current->store[$name])) {
-                return $current->store[$name];
+            if (isset($current->getStore()[$name])) {
+                return $current->getStore()[$name];
             }
             // has secondary scope?
             if (isset($current->storeParent)) {
                 $scope_secondary[] = $current->storeParent;
             }
 
-            if (isset($current->parent)) {
-                $current = $current->parent;
+            if ($current->getParent() !== null) {
+                $current = $current->getParent();
             } else {
                 $current = null;
             }
@@ -2347,10 +2349,10 @@ class Compiler
     // inject array of unparsed strings into environment as variables
     protected function injectVariables($args)
     {
-        $this->pushEnv();
+        $this->pushEnv($this->env);
         $parser = new \LesserPhp\Parser($this, __METHOD__);
         foreach ($args as $name => $strValue) {
-            if ($name{0} != '@') {
+            if ($name{0} !== '@') {
                 $name = '@' . $name;
             }
             $parser->count = 0;
@@ -2515,15 +2517,15 @@ class Compiler
 
         if (is_string($in)) {
             $root = $in;
-        } elseif (is_array($in) and isset($in['root'])) {
-            if ($force or !isset($in['files'])) {
+        } elseif (is_array($in) && isset($in['root'])) {
+            if ($force || !isset($in['files'])) {
                 // If we are forcing a recompile or if for some reason the
                 // structure does not contain any file information we should
                 // specify the root to trigger a rebuild.
                 $root = $in['root'];
-            } elseif (isset($in['files']) and is_array($in['files'])) {
+            } elseif (isset($in['files']) && is_array($in['files'])) {
                 foreach ($in['files'] as $fname => $ftime) {
-                    if (!file_exists($fname) or filemtime($fname) > $ftime) {
+                    if (!file_exists($fname) || filemtime($fname) > $ftime) {
                         // One of the files we knew about previously has changed
                         // so we should look at our incoming root again.
                         $root = $in['root'];
@@ -2551,7 +2553,6 @@ class Compiler
             // we were given initially.
             return $in;
         }
-
     }
 
     // parse and compile buffer
@@ -2568,7 +2569,7 @@ class Compiler
             $this->setVariables($initialVariables);
         }
 
-        if ($str == null) {
+        if ($str === null) {
             if (empty($this->_parseFile)) {
                 throw new \Exception("nothing to parse");
             }
@@ -2597,7 +2598,7 @@ class Compiler
     }
 
     /**
-     * @return FormatterInterface
+     * @return \LesserPhp\Formatter\FormatterInterface
      */
     protected function newFormatter()
     {

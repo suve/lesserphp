@@ -11,9 +11,12 @@
  * Licensed under MIT or GPLv3, see LICENSE
  * @package LesserPhp
  */
-class ErrorHandlingTest extends PHPUnit_Framework_TestCase
+class ErrorHandlingTest extends \PHPUnit\Framework\TestCase
 {
 
+    /**
+     * @var LesserPhp\Compiler
+     */
     private $less;
 
     public function setUp()

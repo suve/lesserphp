@@ -11,7 +11,7 @@
  * Licensed under MIT or GPLv3, see LICENSE
  * @package LesserPhp
  */
-class ServerTest extends \PHPUnit_Framework_TestCase
+class ServerTest extends \PHPUnit\Framework\TestCase
 {
 
     public function testCheckedCachedCompile()

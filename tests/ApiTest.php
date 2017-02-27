@@ -11,7 +11,7 @@
  * Licensed under MIT or GPLv3, see LICENSE
  * @package LesserPhp
  */
-class ApiTest extends PHPUnit_Framework_TestCase
+class ApiTest extends PHPUnit\Framework\TestCase
 {
 
     private $less;
