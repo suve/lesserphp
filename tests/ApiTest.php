@@ -14,6 +14,9 @@
 class ApiTest extends PHPUnit\Framework\TestCase
 {
 
+    /**
+     * @var \LesserPhp\Compiler
+     */
     private $less;
 
     public function setUp()
