@@ -2,6 +2,8 @@
 
 namespace LesserPhp\Library;
 
+use LesserPhp\Exception\GeneralException;
+
 /**
  * lesserphp
  * https://www.maswaba.de/lesserphp
@@ -26,8 +28,8 @@ class Assertions
     public function assertColor($value, $error = "expected color value")
     {
         $color = $this->coerce->coerceColor($value);
-        if (is_null($color)) {
-            throw new \Exception($error);
+        if ($color === null) {
+            throw new GeneralException($error);
         }
 
         return $color;
@@ -38,7 +40,7 @@ class Assertions
         if ($value[0] === "number") {
             return $value[1];
         }
-        throw new \Exception($error);
+        throw new GeneralException($error);
     }
 
     public function assertArgs($value, $expectedArgs, $name = "")
@@ -47,15 +49,15 @@ class Assertions
             return $value;
         } else {
             if ($value[0] !== "list" || $value[1] !== ",") {
-                throw new \Exception('expecting list');
+                throw new GeneralException('expecting list');
             }
             $values = $value[2];
             $numValues = count($values);
             if ($expectedArgs != $numValues) {
                 if ($name) {
-                    $name = $name . ": ";
+                    $name .= ": ";
                 }
-                throw new \Exception("${name}expecting $expectedArgs arguments, got $numValues");
+                throw new GeneralException("${name}expecting $expectedArgs arguments, got $numValues");
             }
 
             return $values;
@@ -65,17 +67,17 @@ class Assertions
     public function assertMinArgs($value, $expectedMinArgs, $name = "")
     {
         if ($value[0] !== "list" || $value[1] !== ",") {
-            throw new \Exception("expecting list");
+            throw new GeneralException("expecting list");
 
         }
         $values = $value[2];
         $numValues = count($values);
         if ($expectedMinArgs > $numValues) {
             if ($name) {
-                $name = $name . ": ";
+                $name .= ": ";
             }
 
-            throw new \Exception("${name}expecting at least $expectedMinArgs arguments, got $numValues");
+            throw new GeneralException("${name}expecting at least $expectedMinArgs arguments, got $numValues");
         }
 
         return $values;

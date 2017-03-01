@@ -201,6 +201,7 @@ class Coerce
                 }
 
         }
+
         return null;
     }
 
@@ -216,5 +217,4 @@ class Coerce
 
         return null;
     }
-
 }

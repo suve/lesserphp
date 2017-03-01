@@ -21,7 +21,7 @@ class Classic implements FormatterInterface
     public $break = "\n";
     public $open = ' {';
     public $close = '}';
-    public $selectorSeparator = ', ';
+    protected $selectorSeparator = ', ';
     public $assignSeparator = ':';
 
     public $openSingle = ' { ';
@@ -30,7 +30,7 @@ class Classic implements FormatterInterface
     public $disableSingle = false;
     public $breakSelectors = false;
 
-    public $compressColors = false;
+    protected $compressColors = false;
 
     private $indentLevel;
 
@@ -85,6 +85,8 @@ class Classic implements FormatterInterface
 
     /**
      * @param $block
+     *
+     * @return mixed|void
      */
     public function block($block)
     {
@@ -143,5 +145,15 @@ class Classic implements FormatterInterface
 
             $this->indentLevel--;
         }
+    }
+
+    public function getSelectorSeparator()
+    {
+        return $this->selectorSeparator;
+    }
+
+    public function getCompressColors()
+    {
+        return $this->compressColors;
     }
 }

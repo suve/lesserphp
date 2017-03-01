@@ -2,6 +2,8 @@
 
 namespace LesserPhp;
 
+use LesserPhp\Exception\GeneralException;
+
 /**
  * lesserphp
  * https://www.maswaba.de/lesserphp
@@ -79,6 +81,14 @@ class Parser
     private $line;
     /** @var array */
     private $seenComments;
+    /** @var string */
+    public $buffer;
+
+    private $env;
+    /** @var bool */
+    private $inExp;
+    /** @var string */
+    private $currentProperty;
 
     public function __construct(Compiler $lessc, $sourceName = null)
     {
@@ -210,7 +220,7 @@ class Parser
                     && $this->literal('{')
                 ) {
                     $media = $this->pushSpecialBlock("media");
-                    $media->queries = is_null($mediaQueries) ? [] : $mediaQueries;
+                    $media->queries = $mediaQueries === null ? [] : $mediaQueries;
 
                     return true;
                 } else {
@@ -346,7 +356,7 @@ nav ul {
             }
 
             $hidden = false;
-            if (is_null($block->type)) {
+            if ($block->type === null) {
                 $hidden = true;
                 if (!isset($block->args)) {
                     foreach ($block->tags as $tag) {
@@ -427,7 +437,7 @@ nav ul {
             $values[] = $exp;
         }
 
-        if (count($values) == 0) {
+        if (count($values) === 0) {
             return false;
         }
 
@@ -485,7 +495,11 @@ nav ul {
             if ($this->match(self::$operatorString . ($needWhite ? '\s' : ''),
                     $m) && self::$precedence[$m[1]] >= $minP
             ) {
-                if (!$this->inParens && isset($this->env->currentProperty) && $m[1] == "/" && empty($this->env->supressedDivision)) {
+                if (!$this->inParens &&
+                    isset($this->env->currentProperty) &&
+                    $m[1] === "/" &&
+                    empty($this->env->supressedDivision)
+                ) {
                     foreach (self::$supressDivisionProps as $pattern) {
                         if (preg_match($pattern, $this->env->currentProperty)) {
                             $this->env->supressedDivision = true;
@@ -549,7 +563,7 @@ nav ul {
             unset($this->env->currentProperty);
         }
 
-        if (count($values) == 0) {
+        if (count($values) === 0) {
             return false;
         }
 
@@ -563,7 +577,7 @@ nav ul {
         $s = $this->seek();
 
         // speed shortcut
-        if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] != "(") {
+        if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] !== "(") {
             return false;
         }
 
@@ -590,7 +604,7 @@ nav ul {
         $s = $this->seek();
 
         // speed shortcut
-        if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] == "-") {
+        if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] === "-") {
             // negation
             if ($this->literal("-", false) &&
                 (($this->variable($inner) && $inner = ["variable", $inner]) ||
@@ -671,6 +685,8 @@ nav ul {
 
             return true;
         }
+
+        return null;
     }
 
     protected function mediaQueryList(&$out)
@@ -691,7 +707,8 @@ nav ul {
         $expressions = null;
         $parts = [];
 
-        if (($this->literal("only") && ($only = true) || $this->literal("not") && ($not = true) || true) && $this->keyword($mediaType)) {
+        if (($this->literal("only") && ($only = true) || $this->literal("not") && ($not = true) || true) &&
+            $this->keyword($mediaType)) {
             $prop = ["mediaType"];
             if (isset($only)) {
                 $prop[] = "only";
@@ -715,7 +732,7 @@ nav ul {
             }
         }
 
-        if (count($parts) == 0) {
+        if (count($parts) === 0) {
             $this->seek($s);
 
             return false;
@@ -783,19 +800,19 @@ nav ul {
 
             $this->count -= strlen($tok);
             if ($tok == $end) {
-                if ($nestingLevel == 0) {
+                if ($nestingLevel === 0) {
                     break;
                 } else {
                     $nestingLevel--;
                 }
             }
 
-            if (($tok == "'" || $tok == '"') && $this->stringValue($str)) {
+            if (($tok === "'" || $tok === '"') && $this->stringValue($str)) {
                 $content[] = $str;
                 continue;
             }
 
-            if ($tok == "@{" && $this->interpolation($inter)) {
+            if ($tok === "@{" && $this->interpolation($inter)) {
                 $content[] = $inter;
                 continue;
             }
@@ -810,7 +827,7 @@ nav ul {
 
         $this->eatWhiteDefault = $oldWhite;
 
-        if (count($content) == 0) {
+        if (count($content) === 0) {
             return false;
         }
 
@@ -848,7 +865,7 @@ nav ul {
             $content[] = $m[1];
             if ($m[2] === "@{") {
                 $this->count -= strlen($m[2]);
-                if ($this->interpolation($inter, false)) {
+                if ($this->interpolation($inter)) {
                     $content[] = $inter;
                 } else {
                     $this->count += strlen($m[2]);
@@ -908,7 +925,7 @@ nav ul {
         // speed shortcut
         if (isset($this->buffer[$this->count])) {
             $char = $this->buffer[$this->count];
-            if (!ctype_digit($char) && $char != ".") {
+            if (!ctype_digit($char) && $char !== ".") {
                 return false;
             }
         }
@@ -962,7 +979,7 @@ nav ul {
             }
 
             if ($this->$method($value)) {
-                if ($value[0] == "variable") {
+                if ($value[0] === "variable") {
                     $arg = ["arg", $value[1]];
                     $ss = $this->seek();
 
@@ -988,10 +1005,11 @@ nav ul {
 
 
             if (!$this->literal($delim)) {
-                if ($delim == "," && $this->literal(";")) {
+                if ($delim === "," && $this->literal(";")) {
                     // found new delim, convert existing args
                     $delim = ";";
                     $method = "propertyValue";
+                    $newArg = null;
 
                     // transform arg list
                     if (isset($values[1])) { // 2 items
@@ -1000,7 +1018,7 @@ nav ul {
                             switch ($arg[0]) {
                                 case "arg":
                                     if ($i) {
-                                        $this->throwError("Cannot mix ; and , as delimiter types");
+                                        throw new GeneralException("Cannot mix ; and , as delimiter types");
                                     }
                                     $newList[] = $arg[2];
                                     break;
@@ -1008,7 +1026,7 @@ nav ul {
                                     $newList[] = $arg[1];
                                     break;
                                 case "rest":
-                                    $this->throwError("Unexpected rest before semicolon");
+                                    throw new GeneralException("Unexpected rest before semicolon");
                             }
                         }
 
@@ -1027,7 +1045,7 @@ nav ul {
                         $newArg = $values[0];
                     }
 
-                    if ($newArg) {
+                    if ($newArg !== null) {
                         $values = [$newArg];
                     }
                 } else {
@@ -1058,11 +1076,7 @@ nav ul {
                 break;
             }
         }
-        if (count($tags) == 0) {
-            return false;
-        }
-
-        return true;
+        return count($tags) !== 0;
     }
 
     // list of tags of specifying mixin path
@@ -1075,18 +1089,14 @@ nav ul {
             $this->literal(">");
         }
 
-        if (count($tags) == 0) {
-            return false;
-        }
-
-        return true;
+        return count($tags) !== 0;
     }
 
     // a bracketed value (contained within in a tag definition)
     protected function tagBracket(&$parts, &$hasExpression)
     {
         // speed shortcut
-        if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] != "[") {
+        if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] !== "[") {
             return false;
         }
 
@@ -1123,7 +1133,7 @@ nav ul {
                     continue;
                 }
 
-                if ($this->interpolation($inter, false)) {
+                if ($this->interpolation($inter)) {
                     $attrParts[] = $inter;
                     $hasInterpolation = true;
                     continue;
@@ -1188,7 +1198,7 @@ nav ul {
                 continue;
             }
 
-            if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] == "@") {
+            if (isset($this->buffer[$this->count]) && $this->buffer[$this->count] === "@") {
                 if ($this->interpolation($interp)) {
                     $hasExpression = true;
                     $interp[2] = true; // don't unescape
@@ -1262,7 +1272,7 @@ nav ul {
                 $func = ['function', $fname, $args];
 
                 return true;
-            } elseif ($fname == 'url') {
+            } elseif ($fname === 'url') {
                 // couldn't parse and in url? treat as string
                 $this->seek($sPreArgs);
                 if ($this->openString(")", $string) && $this->literal(")")) {
@@ -1303,10 +1313,14 @@ nav ul {
     /**
      * Consume an assignment operator
      * Can optionally take a name that will be set to the current property name
+     *
+     * @param string $name
+     *
+     * @return bool
      */
     protected function assign($name = null)
     {
-        if ($name) {
+        if ($name !== null) {
             $this->currentProperty = $name;
         }
 
@@ -1330,7 +1344,7 @@ nav ul {
     {
         if ($this->literal(';', false)) {
             return true;
-        } elseif ($this->count == strlen($this->buffer) || $this->buffer[$this->count] == '}') {
+        } elseif ($this->count == strlen($this->buffer) || $this->buffer[$this->count] === '}') {
             // if there is end of file or a closing block next then we don't need a ;
             return true;
         }
@@ -1357,7 +1371,7 @@ nav ul {
             }
         }
 
-        if (count($guards) == 0) {
+        if (count($guards) === 0) {
             $guards = null;
             $this->seek($s);
 
@@ -1379,7 +1393,7 @@ nav ul {
             }
         }
 
-        if (count($guardGroup) == 0) {
+        if (count($guardGroup) === 0) {
             $guardGroup = null;
             $this->seek($s);
 
@@ -1450,13 +1464,13 @@ nav ul {
             }
         }
 
-        if (count($items) == 0) {
+        if (count($items) === 0) {
             $this->seek($s);
 
             return false;
         }
 
-        if ($flatten && count($items) == 1) {
+        if ($flatten && count($items) === 1) {
             $out = $items[0];
         } else {
             $out = ["list", $delim, $items];
@@ -1532,13 +1546,11 @@ nav ul {
     // match something without consuming it
     protected function peek($regex, &$out = null, $from = null)
     {
-        if (is_null($from)) {
+        if ($from === null) {
             $from = $this->count;
         }
         $r = '/' . $regex . '/Ais';
-        $result = preg_match($r, $this->buffer, $out, null, $from);
-
-        return $result;
+        return preg_match($r, $this->buffer, $out, null, $from);
     }
 
     // seek to a spot in the buffer or return where we are on no argument
@@ -1557,7 +1569,7 @@ nav ul {
 
     public function throwError($msg = "parse error", $count = null)
     {
-        $count = is_null($count) ? $this->count : $count;
+        $count = $count === null ? $this->count : $count;
 
         $line = $this->line +
             substr_count(substr($this->buffer, 0, $count), "\n");
@@ -1570,9 +1582,9 @@ nav ul {
 
         // TODO this depends on $this->count
         if ($this->peek("(.*?)(\n|$)", $m, $count)) {
-            throw new \Exception("$msg: failed at `$m[1]` $loc");
+            throw new GeneralException("$msg: failed at `$m[1]` $loc");
         } else {
-            throw new \Exception("$msg: $loc");
+            throw new GeneralException("$msg: $loc");
         }
     }
 
@@ -1652,7 +1664,7 @@ nav ul {
                 }
             }
 
-            if (is_null($min)) {
+            if ($min === null) {
                 break;
             }
 
@@ -1699,5 +1711,4 @@ nav ul {
 
         return $out . $text;
     }
-
 }

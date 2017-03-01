@@ -29,7 +29,7 @@ class NodeEnv
     private $store = [];
 
     /**
-     * @var string
+     * @var \stdClass
      */
     private $block;
 
@@ -86,7 +86,7 @@ class NodeEnv
     }
 
     /**
-     * @return string
+     * @return \stdClass
      */
     public function getBlock()
     {

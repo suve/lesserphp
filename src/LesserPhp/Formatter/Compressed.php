@@ -18,10 +18,15 @@ class Compressed extends Classic
 
     public $disableSingle = true;
     public $open = '{';
-    public $selectorSeparator = ',';
     public $assignSeparator = ':';
     public $break = '';
-    public $compressColors = true;
+
+    public function __construct()
+    {
+        $this->selectorSeparator = ',';
+        $this->compressColors = true;
+        parent::__construct();
+    }
 
     /**
      * @param int $n

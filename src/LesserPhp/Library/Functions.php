@@ -3,6 +3,7 @@
 namespace LesserPhp\Library;
 
 use LesserPhp\Compiler;
+use LesserPhp\Exception\GeneralException;
 
 /**
  * lesserphp
@@ -15,7 +16,7 @@ use LesserPhp\Compiler;
  * Licensed under MIT or GPLv3, see LICENSE
  * @package LesserPhp
  */
-class Math
+class Functions
 {
 
     /**
@@ -73,8 +74,8 @@ class Math
     public function red($color)
     {
         $color = $this->coerce->coerceColor($color);
-        if (is_null($color)) {
-            $this->throwError('color expected for red()');
+        if ($color === null) {
+            throw new GeneralException('color expected for red()');
         }
 
         return $color[1];
@@ -83,8 +84,8 @@ class Math
     public function green($color)
     {
         $color = $this->coerce->coerceColor($color);
-        if (is_null($color)) {
-            $this->throwError('color expected for green()');
+        if ($color === null) {
+            throw new GeneralException('color expected for green()');
         }
 
         return $color[2];
@@ -93,8 +94,8 @@ class Math
     public function blue($color)
     {
         $color = $this->coerce->coerceColor($color);
-        if (is_null($color)) {
-            $this->throwError('color expected for blue()');
+        if ($color === null) {
+            throw new GeneralException('color expected for blue()');
         }
 
         return $color[3];
@@ -255,13 +256,17 @@ class Math
     public function rgbahex($color)
     {
         $color = $this->coerce->coerceColor($color);
-        if (is_null($color)) {
-            $this->throwError("color expected for rgbahex");
+        if ($color === null) {
+            throw new GeneralException("color expected for rgbahex");
         }
 
-        return sprintf("#%02x%02x%02x%02x",
+        return sprintf(
+            "#%02x%02x%02x%02x",
             isset($color[4]) ? $color[4] * 255 : 255,
-            $color[1], $color[2], $color[3]);
+            $color[1],
+            $color[2],
+            $color[3]
+        );
     }
 
     public function argb($color)
@@ -286,15 +291,15 @@ class Math
         if ($fullpath && ($fsize = filesize($fullpath)) !== false) {
             // IE8 can't handle data uris larger than 32KB
             if ($fsize / 1024 < 32) {
-                if (is_null($mime)) {
+                if ($mime === null) {
                     $finfo = new \finfo(FILEINFO_MIME);
                     $mime = explode('; ', $finfo->file($fullpath));
                     $mime = $mime[0];
                 }
 
                 //todo find out why this suddenly breakes data-uri-test
-                if (!is_null($mime) && $mime !== 'text/x-php') // fallback if the mime type is still unknown
-                {
+                if ($mime !== null && $mime !== 'text/x-php') {
+                    // fallback if the mime type is still unknown
                     $url = sprintf('data:%s;base64,%s', $mime, base64_encode(file_get_contents($fullpath)));
                 }
             }
@@ -312,7 +317,7 @@ class Math
                 if (isset($items[0])) {
                     return $this->e($items[0]);
                 }
-                $this->throwError("unrecognised input");
+                throw new GeneralException("unrecognised input");
             case "string":
                 $arg[1] = "";
 
@@ -340,14 +345,19 @@ class Math
                     $this->compiler->reduce($values[$i]) : ['keyword', ''];
 
                 // lessjs compat, renders fully expanded color, not raw color
-                if ($color = $this->coerce->coerceColor($val)) {
+                $color = $this->coerce->coerceColor($val);
+                if ($color !== null) {
                     $val = $color;
                 }
 
                 $i++;
                 $rep = $this->compiler->compileValue($this->e($val));
-                $template = preg_replace('/' . Compiler::pregQuote($match) . '/',
-                    $rep, $template, 1);
+                $template = preg_replace(
+                    '/' . Compiler::pregQuote($match) . '/',
+                    $rep,
+                    $template,
+                    1
+                );
             }
         }
 
@@ -495,9 +505,11 @@ class Math
     // defaults to 1 for non-colors or colors without an alpha
     public function alpha($value)
     {
-        if (!is_null($color = $this->coerce->coerceColor($value))) {
+        $color = $this->coerce->coerceColor($value);
+        if ($color !== null) {
             return isset($color[4]) ? $color[4] : 1;
         }
+
         return null;
     }
 
@@ -523,7 +535,7 @@ class Math
     public function mix($args)
     {
         if ($args[0] !== "list" || count($args[2]) < 2) {
-            $this->throwError("mix expects (color1, color2, weight)");
+            throw new GeneralException("mix expects (color1, color2, weight)");
         }
 
         list($first, $second) = $args[2];
@@ -602,8 +614,10 @@ class Math
     public function luma($color)
     {
         $color = $this->coerce->coerceColor($color);
+
+        // todo why this changed semantics?
         return (0.2126 * $color[1] / 255) + (0.7152 * $color[2] / 255) + (0.0722 * $color[3] / 255);
-        return (0.2126 * $color[0] / 255) + (0.7152 * $color[1] / 255) + (0.0722 * $color[2] / 255);
+        //return (0.2126 * $color[0] / 255) + (0.7152 * $color[1] / 255) + (0.0722 * $color[2] / 255);
     }
 
 
@@ -633,19 +647,17 @@ class Math
         }
 
         // do the same check for times
-        if (in_array($from, static::$times)) {
-            if (in_array($to, static::$times)) {
-                // currently only ms and s are valid
-                if ($to === "ms") {
-                    $result = $value * 1000;
-                } else {
-                    $result = $value / 1000;
-                }
-
-                $result = round($result, 8);
-
-                return ["number", $result, $to];
+        if (in_array($from, static::$times) && in_array($to, static::$times)) {
+            // currently only ms and s are valid
+            if ($to === "ms") {
+                $result = $value * 1000;
+            } else {
+                $result = $value / 1000;
             }
+
+            $result = round($result, 8);
+
+            return ["number", $result, $to];
         }
 
         // lastly check for an angle
@@ -688,7 +700,7 @@ class Math
         }
 
         // we don't know how to convert these
-        $this->throwError("Cannot convert {$from} to {$to}");
+        throw new GeneralException("Cannot convert {$from} to {$to}");
     }
 
 
@@ -718,17 +730,4 @@ class Math
     {
         return is_file($name);
     }
-
-
-    /**
-     * temporary helper
-     * @param $message
-     *
-     * @throws \Exception
-     */
-    private function throwError($message)
-    {
-        throw new \Exception($message);
-    }
-
 }

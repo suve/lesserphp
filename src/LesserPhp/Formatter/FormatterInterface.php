@@ -21,4 +21,11 @@ interface FormatterInterface
      * @return mixed
      */
     public function block($block);
+
+    public function getSelectorSeparator();
+
+    public function getCompressColors();
+
+    public function property($name, $value);
+
 }

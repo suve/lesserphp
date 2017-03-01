@@ -1,6 +1,6 @@
 <?php
 
-namespace LesserPhp\Formatter;
+namespace LesserPhp\Exception;
 
 /**
  * lesserphp
@@ -13,16 +13,7 @@ namespace LesserPhp\Formatter;
  * Licensed under MIT or GPLv3, see LICENSE
  * @package LesserPhp
  */
-class Lessjs extends Classic
+class GeneralException extends \Exception
 {
 
-    public $disableSingle = true;
-    public $breakSelectors = true;
-    public $assignSeparator = ': ';
-
-    public function __construct()
-    {
-        $this->selectorSeparator = ',';
-        parent::__construct();
-    }
 }
