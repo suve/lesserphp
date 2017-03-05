@@ -16,9 +16,12 @@ namespace LesserPhp;
 class Color
 {
 
-    private $r;
-    private $g;
-    private $b;
+    const HSL = 'hsl';
+    const RGB = 'rgb';
+
+    private $valueA;
+    private $valueB;
+    private $valueC;
     private $type;
     private $alpha;
 
@@ -34,34 +37,34 @@ class Color
     public function __construct($type, $r, $g, $b, $alpha = null)
     {
         $this->type = $type;
-        $this->r = $r;
-        $this->g = $g;
-        $this->b = $b;
+        $this->valueA = $r;
+        $this->valueB = $g;
+        $this->valueC = $b;
         $this->alpha = $alpha;
     }
 
     /**
      * @return float
      */
-    public function getR()
+    public function getValueA()
     {
-        return $this->r;
+        return $this->valueA;
     }
 
     /**
      * @return float
      */
-    public function getG()
+    public function getValueB()
     {
-        return $this->g;
+        return $this->valueB;
     }
 
     /**
      * @return float
      */
-    public function getB()
+    public function getValueC()
     {
-        return $this->b;
+        return $this->valueC;
     }
 
     /**
@@ -74,7 +77,7 @@ class Color
 
     public function getRgb()
     {
-        return [$this->r, $this->g, $this->b];
+        return [$this->valueA, $this->valueB, $this->valueC];
     }
 
     /**

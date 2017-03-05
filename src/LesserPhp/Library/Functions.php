@@ -2,6 +2,7 @@
 
 namespace LesserPhp\Library;
 
+use LesserPhp\Color\Converter;
 use LesserPhp\Compiler;
 use LesserPhp\Exception\GeneralException;
 
@@ -33,6 +34,11 @@ class Functions
      */
     private $compiler;
 
+    /**
+     * @var \LesserPhp\Color\Converter
+     */
+    private $converter;
+
     static public $TRUE = ["keyword", "true"];
     static public $FALSE = ["keyword", "false"];
     static public $lengths = ["px", "m", "cm", "mm", "in", "pt", "pc"];
@@ -41,11 +47,12 @@ class Functions
     static public $lengths_to_base = [1, 3779.52755906, 37.79527559, 3.77952756, 96, 1.33333333, 16];
 
 
-    public function __construct(Assertions $assertions, Coerce $coerce, Compiler $compiler)
+    public function __construct(Assertions $assertions, Coerce $coerce, Compiler $compiler, Converter $converter)
     {
         $this->assertions = $assertions;
         $this->coerce = $coerce;
         $this->compiler = $compiler; // temporary solution to get it working
+        $this->converter = $converter;
     }
 
     public function pow($args)
@@ -414,60 +421,60 @@ class Functions
     {
         list($color, $delta) = $this->compiler->colorArgs($args);
 
-        $hsl = $this->compiler->toHSL($color);
-        $hsl[3] = $this->compiler->clamp($hsl[3] - $delta, 100);
+        $hsl = $this->converter->toHSL($color);
+        $hsl[3] = $this->converter->clamp($hsl[3] - $delta, 100);
 
-        return $this->compiler->toRGB($hsl);
+        return $this->converter->toRGB($hsl);
     }
 
     public function lighten($args)
     {
         list($color, $delta) = $this->compiler->colorArgs($args);
 
-        $hsl = $this->compiler->toHSL($color);
-        $hsl[3] = $this->compiler->clamp($hsl[3] + $delta, 100);
+        $hsl = $this->converter->toHSL($color);
+        $hsl[3] = $this->converter->clamp($hsl[3] + $delta, 100);
 
-        return $this->compiler->toRGB($hsl);
+        return $this->converter->toRGB($hsl);
     }
 
     public function saturate($args)
     {
         list($color, $delta) = $this->compiler->colorArgs($args);
 
-        $hsl = $this->compiler->toHSL($color);
-        $hsl[2] = $this->compiler->clamp($hsl[2] + $delta, 100);
+        $hsl = $this->converter->toHSL($color);
+        $hsl[2] = $this->converter->clamp($hsl[2] + $delta, 100);
 
-        return $this->compiler->toRGB($hsl);
+        return $this->converter->toRGB($hsl);
     }
 
     public function desaturate($args)
     {
         list($color, $delta) = $this->compiler->colorArgs($args);
 
-        $hsl = $this->compiler->toHSL($color);
-        $hsl[2] = $this->compiler->clamp($hsl[2] - $delta, 100);
+        $hsl = $this->converter->toHSL($color);
+        $hsl[2] = $this->converter->clamp($hsl[2] - $delta, 100);
 
-        return $this->compiler->toRGB($hsl);
+        return $this->converter->toRGB($hsl);
     }
 
     public function spin($args)
     {
         list($color, $delta) = $this->compiler->colorArgs($args);
 
-        $hsl = $this->compiler->toHSL($color);
+        $hsl = $this->converter->toHSL($color);
 
         $hsl[1] = $hsl[1] + $delta % 360;
         if ($hsl[1] < 0) {
             $hsl[1] += 360;
         }
 
-        return $this->compiler->toRGB($hsl);
+        return $this->converter->toRGB($hsl);
     }
 
     public function fadeout($args)
     {
         list($color, $delta) = $this->compiler->colorArgs($args);
-        $color[4] = $this->compiler->clamp((isset($color[4]) ? $color[4] : 1) - $delta / 100);
+        $color[4] = $this->converter->clamp((isset($color[4]) ? $color[4] : 1) - $delta / 100);
 
         return $color;
     }
@@ -475,34 +482,45 @@ class Functions
     public function fadein($args)
     {
         list($color, $delta) = $this->compiler->colorArgs($args);
-        $color[4] = $this->compiler->clamp((isset($color[4]) ? $color[4] : 1) + $delta / 100);
+        $color[4] = $this->converter->clamp((isset($color[4]) ? $color[4] : 1) + $delta / 100);
 
         return $color;
     }
 
     public function hue($color)
     {
-        $hsl = $this->compiler->toHSL($this->assertions->assertColor($color));
+        $hsl = $this->converter->toHSL($this->assertions->assertColor($color));
 
         return round($hsl[1]);
     }
 
     public function saturation($color)
     {
-        $hsl = $this->compiler->toHSL($this->assertions->assertColor($color));
+        $hsl = $this->converter->toHSL($this->assertions->assertColor($color));
 
         return round($hsl[2]);
     }
 
+    /**
+     * @param $color
+     *
+     * @return float
+     */
     public function lightness($color)
     {
-        $hsl = $this->compiler->toHSL($this->assertions->assertColor($color));
+        $hsl = $this->converter->toHSL($this->assertions->assertColor($color));
 
         return round($hsl[3]);
     }
 
-    // get the alpha of a color
-    // defaults to 1 for non-colors or colors without an alpha
+    /**
+     * get the alpha of a color
+     * defaults to 1 for non-colors or colors without an alpha
+     *
+     * @param array $value
+     *
+     * @return int|null
+     */
     public function alpha($value)
     {
         $color = $this->coerce->coerceColor($value);
@@ -517,7 +535,7 @@ class Functions
     public function fade($args)
     {
         list($color, $alpha) = $this->compiler->colorArgs($args);
-        $color[4] = $this->compiler->clamp($alpha / 100.0);
+        $color[4] = $this->converter->clamp($alpha / 100.0);
 
         return $color;
     }
@@ -713,7 +731,13 @@ class Functions
         }
     }
 
-    // attempts to find the path of an import url, returns null for css files
+    /**
+     * attempts to find the path of an import url, returns null for css files
+     *
+     * @param string $url
+     *
+     * @return null|string
+     */
     public function findImport($url)
     {
         foreach ((array)$this->compiler->importDir as $dir) {
@@ -726,6 +750,11 @@ class Functions
         return null;
     }
 
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
     public function fileExists($name)
     {
         return is_file($name);
