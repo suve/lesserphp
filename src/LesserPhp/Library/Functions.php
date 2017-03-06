@@ -740,7 +740,7 @@ class Functions
      */
     public function findImport($url)
     {
-        foreach ((array)$this->compiler->importDir as $dir) {
+        foreach ($this->compiler->getImportDirs() as $dir) {
             $full = $dir . (substr($dir, -1) !== '/' ? '/' : '') . $url;
             if ($this->fileExists($file = $full . '.less') || $this->fileExists($file = $full)) {
                 return $file;

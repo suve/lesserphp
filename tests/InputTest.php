@@ -39,9 +39,9 @@ class InputTest extends \PHPUnit\Framework\TestCase
     public function setUp()
     {
         $this->less = new \LesserPhp\Compiler();
-        $this->less->importDir = array_map(function ($path) {
-            return __DIR__ . "/" . $path;
-        }, self::$importDirs);
+        $this->less->setImportDirs(array_map(function ($path) {
+            return __DIR__ . '/' . $path;
+        }, self::$importDirs));
     }
 
     /**

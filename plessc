@@ -48,7 +48,7 @@ if (has("h", "help")) {
 error_reporting(E_ALL);
 $path = realpath(dirname(__FILE__)) . '/';
 
-$VERSION = \LesserPhp\Compiler::$VERSION;
+$VERSION = \LesserPhp\Compiler::VERSION;
 
 $fa = "Fatal Error: ";
 function err($msg)
@@ -61,10 +61,10 @@ if (php_sapi_name() != "cli") {
     exit(1);
 }
 
-function make_less($fname = null)
+function make_less()
 {
     global $opts;
-    $l = new \LesserPhp\Compiler($fname);
+    $l = new \LesserPhp\Compiler();
 
     if (has("f")) {
         $format = $opts["f"];
@@ -80,14 +80,14 @@ function make_less($fname = null)
     return $l;
 }
 
-function process($data, $import = null)
+/**
+ * @param $data
+ */
+function process($data)
 {
     global $fa;
 
     $l = make_less();
-    if ($import) {
-        $l->importDir = $import;
-    }
 
     try {
         echo $l->parse($data);
@@ -246,7 +246,7 @@ function dumpWithoutParent($o, $alsoStrip = [])
 }
 
 try {
-    $less = make_less($fname);
+    $less = make_less();
     if (has("T", "X")) {
         $parser = new \LesserPhp\Parser($less, $fname);
         $tree = $parser->parse(file_get_contents($fname));

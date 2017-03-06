@@ -360,7 +360,7 @@ nav ul {
                 $hidden = true;
                 if (!isset($block->args)) {
                     foreach ($block->tags as $tag) {
-                        if (!is_string($tag) || $tag{0} != $this->lessc->mPrefix) {
+                        if (!is_string($tag) || $tag[0] !== $this->lessc->getMPrefix()) {
                             $hidden = false;
                             break;
                         }
@@ -416,12 +416,17 @@ nav ul {
         return preg_match($pattern, $dirname);
     }
 
-    protected function fixTags($tags)
+    /**
+     * @param array $tags
+     *
+     * @return mixed
+     */
+    protected function fixTags(array $tags)
     {
         // move @ tags out of variable namespace
         foreach ($tags as &$tag) {
-            if ($tag{0} == $this->lessc->vPrefix) {
-                $tag[0] = $this->lessc->mPrefix;
+            if ($tag[0] === $this->lessc->getVPrefix()) {
+                $tag[0] = $this->lessc->getMPrefix();
             }
         }
 
@@ -1120,7 +1125,7 @@ nav ul {
                 if ($this->stringValue($str)) {
                     // escape parent selector, (yuck)
                     foreach ($str[2] as &$chunk) {
-                        $chunk = str_replace($this->lessc->parentSelector, "$&$", $chunk);
+                        $chunk = str_replace($this->lessc->getParentSelector(), '$&$', $chunk);
                     }
 
                     $attrParts[] = $str;
@@ -1292,13 +1297,13 @@ nav ul {
     protected function variable(&$name)
     {
         $s = $this->seek();
-        if ($this->literal($this->lessc->vPrefix, false) &&
+        if ($this->literal($this->lessc->getVPrefix(), false) &&
             ($this->variable($sub) || $this->keyword($name))
         ) {
             if (!empty($sub)) {
                 $name = ['variable', $sub];
             } else {
-                $name = $this->lessc->vPrefix . $name;
+                $name = $this->lessc->getVPrefix() . $name;
             }
 
             return true;

@@ -17,7 +17,7 @@ class ServerTest extends \PHPUnit\Framework\TestCase
     public function testCheckedCachedCompile()
     {
         $server = new \LesserPhp\Compiler();
-        $server->setImportDir(__DIR__ . '/inputs/test-imports/');
+        $server->setImportDirs([__DIR__ . '/inputs/test-imports/']);
         $css = $server->checkedCachedCompile(__DIR__ . '/inputs/import.less', '/tmp/less.css');
 
         $this->assertFileExists('/tmp/less.css');

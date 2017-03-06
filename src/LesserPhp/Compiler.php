@@ -48,47 +48,90 @@ use LesserPhp\Library\Functions;
 class Compiler
 {
 
-    static public $VERSION = "v0.5.1";
+    const VERSION = 'v0.5.1';
 
-    static public $TRUE = ["keyword", "true"];
-    static public $FALSE = ["keyword", "false"];
+    static public $TRUE = ['keyword', 'true'];
+    static public $FALSE = ['keyword', 'false'];
 
-    protected $libFunctions = [];
-    protected $registeredVars = [];
+    /**
+     * @var callable[]
+     */
+    private $libFunctions = [];
+
+    /**
+     * @var string[]
+     */
+    private $registeredVars = [];
+
+    /**
+     * @var bool
+     */
     protected $preserveComments = false;
 
-    public $vPrefix = '@'; // prefix of abstract properties
-    public $mPrefix = '$'; // prefix of abstract blocks
-    public $parentSelector = '&';
+    /**
+     * @var string $vPrefix prefix of abstract properties
+     */
+    private $vPrefix = '@';
 
-    static public $lengths = ["px", "m", "cm", "mm", "in", "pt", "pc"];
-    static public $times = ["s", "ms"];
-    static public $angles = ["rad", "deg", "grad", "turn"];
+    /**
+     * @var string $mPrefix prefix of abstract blocks
+     */
+    private $mPrefix = '$';
 
-    static public $lengths_to_base = [1, 3779.52755906, 37.79527559, 3.77952756, 96, 1.33333333, 16];
-    public $importDisabled = false;
-    public $importDir = [];
+    /**
+     * @var string
+     */
+    private $parentSelector = '&';
 
-    protected $numberPrecision;
+    /**
+     * @var bool $importDisabled disable @import
+     */
+    private $importDisabled = false;
 
-    protected $allParsedFiles = [];
+    /**
+     * @var string[]
+     */
+    private $importDirs = [];
 
-    // set to the parser that generated the current line when compiling
-    // so we know how to create error messages
+    /**
+     * @var int
+     */
+    private $numberPrecision;
+
+    /**
+     * @var string[]
+     */
+    private $allParsedFiles = [];
+
+    /**
+     * set to the parser that generated the current line when compiling
+     * so we know how to create error messages
+     * @var \LesserPhp\Parser
+     */
+    private $sourceParser;
+
+    /**
+     * @var integer $sourceLoc Lines of Code
+     */
+    private $sourceLoc;
+
+    /**
+     * @var int $nextImportId uniquely identify imports
+     */
+    static private $nextImportId = 0;
+
     /**
      * @var \LesserPhp\Parser
      */
-    protected $sourceParser;
-    protected $sourceLoc;
-
-    static protected $nextImportId = 0; // uniquely identify imports
-
-    /** @var \LesserPhp\Parser */
     private $parser;
-    /** @var \LesserPhp\Formatter\FormatterInterface */
-    private $formatter;
+
     /**
-     * @var \LesserPhp\NodeEnv
+     * @var \LesserPhp\Formatter\FormatterInterface
+     */
+    private $formatter;
+
+    /**
+     * @var \LesserPhp\NodeEnv What's the meaning of "env" in this context?
      */
     private $env;
 
@@ -96,10 +139,12 @@ class Compiler
      * @var \LesserPhp\Library\Coerce
      */
     private $coerce;
+
     /**
      * @var \LesserPhp\Library\Assertions
      */
     private $assertions;
+
     /**
      * @var \LesserPhp\Library\Functions
      */
@@ -109,33 +154,41 @@ class Compiler
      * @var mixed what's this exactly?
      */
     private $scope;
+
     /**
      * @var string
      */
     private $formatterName;
 
     /**
-     * Initialize any static state, can initialize parser for a file
-     * $opts isn't used yet
+     * @var \LesserPhp\Color\Converter
      */
-    public function __construct($fname = null)
-    {
-        if ($fname !== null) {
-            // used for deprecated parse method
-            $this->_parseFile = $fname;
-        }
+    private $converter;
 
+    /**
+     * Constructor.
+     *
+     * Hardwires dependencies for now
+     */
+    public function __construct()
+    {
         $this->coerce = new Coerce();
         $this->assertions = new Assertions($this->coerce);
         $this->converter = new Converter();
         $this->functions = new Functions($this->assertions, $this->coerce, $this, $this->converter);
     }
 
-    // attempts to find the path of an import url, returns null for css files
+    /**
+     * attempts to find the path of an import url, returns null for css files
+     *
+     * @param $url
+     *
+     * @return null|string
+     */
     protected function findImport($url)
     {
-        foreach ((array)$this->importDir as $dir) {
-            $full = $dir . (substr($dir, -1) !== '/' ? '/' : '') . $url;
+        foreach ($this->importDirs as $dir) {
+            $full = $dir . (mb_substr($dir, -1) !== '/' ? '/' : '') . $url;
             if ($this->fileExists($file = $full . '.less') || $this->fileExists($file = $full)) {
                 return $file;
             }
@@ -187,7 +240,7 @@ class Compiler
             return false;
         }
 
-        if ($this->importDisabled) {
+        if ($this->isImportDisabled()) {
             return [false, '/* import disabled */'];
         }
 
@@ -233,17 +286,15 @@ class Compiler
     {
         $oldSourceParser = $this->sourceParser;
 
-        $oldImport = $this->importDir;
+        $oldImport = $this->importDirs;
 
-        // TODO: this is because the importDir api is stupid
-        $this->importDir = (array)$this->importDir;
-        array_unshift($this->importDir, $importDir);
+        array_unshift($this->importDirs, $importDir);
 
         foreach ($props as $prop) {
             $this->compileProp($prop, $block, $out);
         }
 
-        $this->importDir = $oldImport;
+        $this->importDirs = $oldImport;
         $this->sourceParser = $oldSourceParser;
     }
 
@@ -1661,16 +1712,15 @@ class Compiler
 
         $pi = pathinfo($fname);
 
-        $oldImport = $this->importDir;
+        $oldImport = $this->importDirs;
 
-        $this->importDir = (array)$this->importDir;
-        $this->importDir[] = $pi['dirname'] . '/';
+        $this->importDirs[] = $pi['dirname'] . '/';
 
         $this->addParsedFile($fname);
 
         $out = $this->compile(file_get_contents($fname), $fname);
 
-        $this->importDir = $oldImport;
+        $this->importDirs = $oldImport;
 
         if ($outFname !== null) {
             return file_put_contents($outFname, $out);
@@ -1785,7 +1835,7 @@ class Compiler
             $out = [];
             $out['root'] = $root;
             $out['compiled'] = $this->compileFile($root);
-            $out['files'] = $this->allParsedFiles();
+            $out['files'] = $this->allParsedFiles;
             $out['updated'] = time();
 
             return $out;
@@ -1856,47 +1906,74 @@ class Compiler
         return new $className;
     }
 
+    /**
+     * @param bool $preserve
+     */
     public function setPreserveComments($preserve)
     {
         $this->preserveComments = $preserve;
     }
 
-    public function registerFunction($name, $func)
+    /**
+     * @param string $name
+     * @param callable $func
+     */
+    public function registerFunction($name, callable $func)
     {
         $this->libFunctions[$name] = $func;
     }
 
+    /**
+     * @param string $name
+     */
     public function unregisterFunction($name)
     {
         unset($this->libFunctions[$name]);
     }
 
-    public function setVariables($variables)
+    /**
+     * @param array $variables
+     */
+    public function setVariables(array $variables)
     {
         $this->registeredVars = array_merge($this->registeredVars, $variables);
     }
 
+    /**
+     * @param $name
+     */
     public function unsetVariable($name)
     {
         unset($this->registeredVars[$name]);
     }
 
-    public function setImportDir($dirs)
+    /**
+     * @param string[] $dirs
+     */
+    public function setImportDirs(array $dirs)
     {
-        $this->importDir = (array)$dirs;
+        $this->importDirs = $dirs;
     }
 
+    /**
+     * @param string $dir
+     */
     public function addImportDir($dir)
     {
-        $this->importDir = (array)$this->importDir;
-        $this->importDir[] = $dir;
+        $this->importDirs[] = $dir;
     }
 
-    public function allParsedFiles()
+    /**
+     * @return string[]
+     */
+    public function getImportDirs()
     {
-        return $this->allParsedFiles;
+        return $this->importDirs;
     }
 
+    /**
+     * @param string $file
+     */
     public function addParsedFile($file)
     {
         $this->allParsedFiles[realpath($file)] = filemtime($file);
@@ -1935,5 +2012,62 @@ class Compiler
         }
 
         return $less->cachedCompile($in, $force);
+    }
+
+    /**
+     * prefix of abstract properties
+     *
+     * @return string
+     */
+    public function getVPrefix()
+    {
+        return $this->vPrefix;
+    }
+
+    /**
+     * prefix of abstract blocks
+     *
+     * @return string
+     */
+    public function getMPrefix()
+    {
+        return $this->mPrefix;
+    }
+
+    /**
+     * @return string
+     */
+    public function getParentSelector()
+    {
+        return $this->parentSelector;
+    }
+
+    /**
+     * @param int $numberPresicion
+     */
+    protected function setNumberPrecision($numberPresicion = null)
+    {
+        $this->numberPrecision = $numberPresicion;
+    }
+
+    /**
+     * @return \LesserPhp\Library\Coerce
+     */
+    protected function getCoerce()
+    {
+        return $this->coerce;
+    }
+
+    public function setImportDisabled()
+    {
+        $this->importDisabled = true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isImportDisabled()
+    {
+        return $this->importDisabled;
     }
 }

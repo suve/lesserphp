@@ -22,7 +22,7 @@ class ApiTest extends PHPUnit\Framework\TestCase
     public function setUp()
     {
         $this->less = new \LesserPhp\Compiler();
-        $this->less->importDir = [__DIR__ . "/inputs/test-imports"];
+        $this->less->setImportDirs([__DIR__ . '/inputs/test-imports']);
     }
 
     public function testPreserveComments()
@@ -107,6 +107,7 @@ EOD;
 
     public function testOldInterface()
     {
+        $this->markTestSkipped('Old Interface Does Not Exist Anymore');
         $this->less = new \LesserPhp\Compiler(__DIR__ . "/inputs/hi.less");
         $out = $this->less->parse(["hello" => "10px"]);
         $this->assertEquals(trim($out), trim('
@@ -134,7 +135,7 @@ div:before {
 
     public function testDisableImport()
     {
-        $this->less->importDisabled = true;
+        $this->less->setImportDisabled();
         $this->assertEquals(
             "/* import disabled */",
             $this->compile("@import 'file3';"));
