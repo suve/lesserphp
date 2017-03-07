@@ -16,31 +16,65 @@ namespace LesserPhp\Formatter;
 class Classic implements FormatterInterface
 {
 
-    public $indentChar = '  ';
-
-    public $break = "\n";
-    public $open = ' {';
-    public $close = '}';
-    protected $selectorSeparator = ', ';
-    public $assignSeparator = ':';
-
-    public $openSingle = ' { ';
-    public $closeSingle = ' }';
-
-    public $disableSingle = false;
-    public $breakSelectors = false;
-
-    protected $compressColors = false;
-
-    private $indentLevel;
+    /**
+     * @var string
+     */
+    private $indentChar = '  ';
 
     /**
-     * Classic constructor.
+     * @var string
      */
-    public function __construct()
-    {
-        $this->indentLevel = 0;
-    }
+    private $break = "\n";
+
+    /**
+     * @var string
+     */
+    private $open = ' {';
+
+    /**
+     * @var string
+     */
+    private $close = '}';
+
+    /**
+     * @var string
+     */
+    private $selectorSeparator = ', ';
+
+    /**
+     * @var string
+     */
+    private $assignSeparator = ':';
+
+    /**
+     * @var string
+     */
+    private $openSingle = ' { ';
+
+    /**
+     * @var string
+     */
+    private $closeSingle = ' }';
+
+    /**
+     * @var bool
+     */
+    private $disableSingle = false;
+
+    /**
+     * @var bool
+     */
+    private $breakSelectors = false;
+
+    /**
+     * @var bool
+     */
+    private $compressColors = false;
+
+    /**
+     * @var int
+     */
+    private $indentLevel = 0;
 
     /**
      * @param int $n
@@ -53,10 +87,10 @@ class Classic implements FormatterInterface
     }
 
     /**
-     * @param $name
-     * @param $value
+     * @param string $name
+     * @param string $value
      *
-     * @return string
+     * @return string string
      */
     public function property($name, $value)
     {
@@ -86,7 +120,7 @@ class Classic implements FormatterInterface
     /**
      * @param $block
      *
-     * @return mixed|void
+     * @return void
      */
     public function block($block)
     {
@@ -108,8 +142,7 @@ class Classic implements FormatterInterface
                 $selectorSeparator = $this->selectorSeparator;
             }
 
-            echo $pre .
-                implode($selectorSeparator, $block->selectors);
+            echo $pre . implode($selectorSeparator, $block->selectors);
             if ($isSingle) {
                 echo $this->openSingle;
                 $inner = '';
@@ -147,13 +180,75 @@ class Classic implements FormatterInterface
         }
     }
 
+    /**
+     * @return string
+     */
     public function getSelectorSeparator()
     {
         return $this->selectorSeparator;
     }
 
+    /**
+     * @param string $separator
+     */
+    protected function setSelectorSeparator($separator)
+    {
+        $this->selectorSeparator = $separator;
+    }
+
+    /**
+     * @return bool
+     */
     public function getCompressColors()
     {
         return $this->compressColors;
+    }
+
+    /**
+     * @param bool $compress
+     */
+    protected function setCompressColors($compress)
+    {
+        $this->compressColors = $compress;
+    }
+
+    /**
+     * @param bool $breakSelectors
+     */
+    protected function setBreakSelectors($breakSelectors)
+    {
+        $this->breakSelectors = $breakSelectors;
+    }
+
+    /**
+     * @param bool $disableSingle
+     */
+    protected function setDisabledSingle($disableSingle)
+    {
+        $this->disableSingle = $disableSingle;
+    }
+
+    /**
+     * @param string $breakChar
+     */
+    protected function setBreakChar($breakChar)
+    {
+        $this->break = $breakChar;
+    }
+
+    /**
+     * @param string $openChar
+     */
+    protected function setOpenChar($openChar)
+    {
+        $this->open = $openChar;
+    }
+
+    /**
+     * @param string $assignOperator
+     */
+    protected function setAssignOperator($assignOperator)
+    {
+        $this->assignSeparator = $assignOperator;
     }
 }

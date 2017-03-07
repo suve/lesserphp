@@ -16,13 +16,14 @@ namespace LesserPhp\Formatter;
 class Lessjs extends Classic
 {
 
-    public $disableSingle = true;
-    public $breakSelectors = true;
-    public $assignSeparator = ': ';
-
+    /**
+     * Lessjs constructor.
+     */
     public function __construct()
     {
-        $this->selectorSeparator = ',';
-        parent::__construct();
+        $this->setAssignOperator(': ');
+        $this->setDisabledSingle(true);
+        $this->setBreakSelectors(true);
+        $this->setSelectorSeparator(',');
     }
 }

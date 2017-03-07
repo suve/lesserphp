@@ -121,7 +121,7 @@ class Compiler
     static private $nextImportId = 0;
 
     /**
-     * @var \LesserPhp\Parser
+     * @var Parser
      */
     private $parser;
 
@@ -197,12 +197,23 @@ class Compiler
         return null;
     }
 
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
     protected function fileExists($name)
     {
         return is_file($name);
     }
 
-    public static function compressList($items, $delim)
+    /**
+     * @param array $items
+     * @param       $delim
+     *
+     * @return array
+     */
+    public static function compressList(array $items, $delim)
     {
         if (!isset($items[1]) && isset($items[0])) {
             return $items[0];
@@ -211,12 +222,25 @@ class Compiler
         }
     }
 
+    /**
+     * @param string $what
+     *
+     * @return string
+     */
     public static function pregQuote($what)
     {
         return preg_quote($what, '/');
     }
 
-    protected function tryImport($importPath, $parentBlock, $out)
+    /**
+     * @param array $importPath
+     * @param       $parentBlock
+     * @param       $out
+     *
+     * @return array|false
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    protected function tryImport(array $importPath, $parentBlock, $out)
     {
         if ($importPath[0] === 'function' && $importPath[1] === 'url') {
             $importPath = $this->flattenList($importPath[2]);
@@ -282,7 +306,13 @@ class Compiler
         return [true, $bottom, $parser, $dir];
     }
 
-    protected function compileImportedProps($props, $block, $out, $importDir)
+    /**
+     * @param array  $props
+     * @param        $block
+     * @param        $out
+     * @param string $importDir
+     */
+    protected function compileImportedProps(array $props, $block, $out, $importDir)
     {
         $oldSourceParser = $this->sourceParser;
 
@@ -345,6 +375,9 @@ class Compiler
         }
     }
 
+    /**
+     * @param $block
+     */
     protected function compileCSSBlock($block)
     {
         $env = $this->pushEnv($this->env);
@@ -360,6 +393,9 @@ class Compiler
         $this->popEnv();
     }
 
+    /**
+     * @param $media
+     */
     protected function compileMedia($media)
     {
         $env = $this->pushEnv($this->env, $media);
@@ -386,6 +422,11 @@ class Compiler
         $this->popEnv();
     }
 
+    /**
+     * @param $scope
+     *
+     * @return mixed
+     */
     protected function mediaParent($scope)
     {
         while (!empty($scope->parent)) {
@@ -398,6 +439,10 @@ class Compiler
         return $scope;
     }
 
+    /**
+     * @param $block
+     * @param $selectors
+     */
     protected function compileNestedBlock($block, $selectors)
     {
         $this->pushEnv($this->env, $block);
@@ -410,6 +455,9 @@ class Compiler
         $this->popEnv();
     }
 
+    /**
+     * @param $root
+     */
     protected function compileRoot($root)
     {
         $this->pushEnv($this->env);
@@ -418,6 +466,10 @@ class Compiler
         $this->popEnv();
     }
 
+    /**
+     * @param $block
+     * @param $out
+     */
     protected function compileProps($block, $out)
     {
         foreach ($this->sortProps($block->props) as $prop) {
@@ -455,6 +507,12 @@ class Compiler
         return array_merge($unique, $comments);
     }
 
+    /**
+     * @param array $props
+     * @param bool  $split
+     *
+     * @return array
+     */
     protected function sortProps(array $props, $split = false)
     {
         $vars = [];
@@ -500,6 +558,11 @@ class Compiler
         }
     }
 
+    /**
+     * @param array $queries
+     *
+     * @return string
+     */
     protected function compileMediaQuery(array $queries)
     {
         $compiledQueries = [];
@@ -538,9 +601,15 @@ class Compiler
         return $out;
     }
 
+    /**
+     * @param \LesserPhp\NodeEnv $env
+     * @param array              $childQueries
+     *
+     * @return array
+     */
     protected function multiplyMedia(NodeEnv $env = null, array $childQueries = null)
     {
-        if (is_null($env) ||
+        if ($env === null ||
             (!empty($env->getBlock()->type) && $env->getBlock()->type !== 'media')
         ) {
             return $childQueries;
@@ -566,6 +635,12 @@ class Compiler
         return $this->multiplyMedia($env->getParent(), $out);
     }
 
+    /**
+     * @param $tag
+     * @param $replace
+     *
+     * @return int
+     */
     protected function expandParentSelectors(&$tag, $replace)
     {
         $parts = explode("$&$", $tag);
@@ -579,6 +654,9 @@ class Compiler
         return $count;
     }
 
+    /**
+     * @return array|null
+     */
     protected function findClosestSelectors()
     {
         $env = $this->env;
@@ -595,7 +673,13 @@ class Compiler
     }
 
 
-    // multiply $selectors against the nearest selectors in env
+    /**
+     *  multiply $selectors against the nearest selectors in env
+     *
+     * @param array $selectors
+     *
+     * @return array
+     */
     protected function multiplySelectors(array $selectors)
     {
         // find parent selectors
@@ -627,7 +711,14 @@ class Compiler
         return $out;
     }
 
-    // reduces selector expressions
+    /**
+     * reduces selector expressions
+     *
+     * @param array $selectors
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     protected function compileSelectors(array $selectors)
     {
         $out = [];
@@ -650,11 +741,18 @@ class Compiler
      *
      * @return bool
      */
-    protected function eq($left, $right)
+    protected function equals($left, $right)
     {
         return $left == $right;
     }
 
+    /**
+     * @param $block
+     * @param $orderedArgs
+     * @param $keywordArgs
+     *
+     * @return bool
+     */
     protected function patternMatch($block, $orderedArgs, $keywordArgs)
     {
         // match the guards if it has them
@@ -718,7 +816,7 @@ class Compiler
         foreach ($remainingArgs as $i => $arg) {
             switch ($arg[0]) {
                 case "lit":
-                    if (empty($orderedArgs[$i]) || !$this->eq($arg[1], $orderedArgs[$i])) {
+                    if (empty($orderedArgs[$i]) || !$this->equals($arg[1], $orderedArgs[$i])) {
                         return false;
                     }
                     break;
@@ -744,6 +842,14 @@ class Compiler
         }
     }
 
+    /**
+     * @param array $blocks
+     * @param       $orderedArgs
+     * @param       $keywordArgs
+     * @param array $skip
+     *
+     * @return array|null
+     */
     protected function patternMatchAll(array $blocks, $orderedArgs, $keywordArgs, array $skip = [])
     {
         $matches = null;
@@ -761,7 +867,17 @@ class Compiler
         return $matches;
     }
 
-    // attempt to find blocks matched by path and args
+    /**
+     * attempt to find blocks matched by path and args
+     *
+     * @param       $searchIn
+     * @param array $path
+     * @param       $orderedArgs
+     * @param       $keywordArgs
+     * @param array $seen
+     *
+     * @return array|null
+     */
     protected function findBlocks($searchIn, array $path, $orderedArgs, $keywordArgs, array $seen = [])
     {
         if ($searchIn === null) {
@@ -811,8 +927,16 @@ class Compiler
         return $this->findBlocks($searchIn->parent, $path, $orderedArgs, $keywordArgs, $seen);
     }
 
-    // sets all argument names in $args to either the default value
-    // or the one passed in through $values
+    /**
+     * sets all argument names in $args to either the default value
+     * or the one passed in through $values
+     *
+     * @param array $args
+     * @param       $orderedValues
+     * @param       $keywordValues
+     *
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     protected function zipSetArgs(array $args, $orderedValues, $keywordValues)
     {
         $assignedValues = [];
@@ -831,7 +955,7 @@ class Compiler
                     // has default value
                     $value = $a[2];
                 } else {
-                    throw new GeneralException("Failed to assign arg " . $a[1]);
+                    throw new GeneralException('Failed to assign arg ' . $a[1]);
                 }
 
                 $value = $this->reduce($value);
@@ -854,7 +978,15 @@ class Compiler
         $this->env->setArguments($assignedValues + $orderedValues);
     }
 
-    // compile a prop and update $lines or $blocks appropriately
+    /**
+     * compile a prop and update $lines or $blocks appropriately
+     *
+     * @param $prop
+     * @param $block
+     * @param $out
+     *
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     protected function compileProp($prop, $block, $out)
     {
         // set error position context
@@ -1338,17 +1470,27 @@ class Compiler
         return $value;
     }
 
-
-    // turn list of length 1 into value type
-    protected function flattenList($value)
+    /**
+     * turn list of length 1 into value type
+     *
+     * @param array $value
+     *
+     * @return array
+     */
+    protected function flattenList(array $value)
     {
-        if ($value[0] === "list" && count($value[2]) === 1) {
+        if ($value[0] === 'list' && count($value[2]) === 1) {
             return $this->flattenList($value[2][0]);
         }
 
         return $value;
     }
 
+    /**
+     * @param $a
+     *
+     * @return array
+     */
     public function toBool($a)
     {
         if ($a) {
@@ -1358,7 +1500,13 @@ class Compiler
         }
     }
 
-    // evaluate an expression
+    /**
+     * evaluate an expression
+     *
+     * @param array $exp
+     *
+     * @return array
+     */
     protected function evaluate($exp)
     {
         list(, $op, $left, $right, $whiteBefore, $whiteAfter) = $exp;
@@ -1385,7 +1533,7 @@ class Compiler
         }
 
         if ($op === "=") {
-            return $this->toBool($this->eq($left, $right));
+            return $this->toBool($this->equals($left, $right));
         }
 
         $str = $this->stringConcatenate($left, $right);
@@ -1414,7 +1562,13 @@ class Compiler
         return ["string", "", [$left, $paddedOp, $right]];
     }
 
-    protected function stringConcatenate($left, $right)
+    /**
+     * @param array $left
+     * @param array $right
+     *
+     * @return array|null
+     */
+    protected function stringConcatenate(array $left, array $right)
     {
         $strLeft = $this->coerce->coerceString($left);
         if ($strLeft !== null) {
@@ -1437,8 +1591,14 @@ class Compiler
     }
 
 
-    // make sure a color's components don't go out of bounds
-    public function fixColor($c)
+    /**
+     * make sure a color's components don't go out of bounds
+     *
+     * @param array $c
+     *
+     * @return mixed
+     */
+    public function fixColor(array $c)
     {
         foreach (range(1, 3) as $i) {
             if ($c[$i] < 0) {
@@ -1452,7 +1612,15 @@ class Compiler
         return $c;
     }
 
-    protected function op_number_color($op, $lft, $rgt)
+    /**
+     * @param string $op
+     * @param array  $lft
+     * @param array  $rgt
+     *
+     * @return array|null
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    protected function op_number_color($op, array $lft, array $rgt)
     {
         if ($op === '+' || $op === '*') {
             return $this->op_color_number($op, $rgt, $lft);
@@ -1461,7 +1629,15 @@ class Compiler
         return null;
     }
 
-    protected function op_color_number($op, $lft, $rgt)
+    /**
+     * @param string $op
+     * @param array  $lft
+     * @param array  $rgt
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    protected function op_color_number($op, array $lft, array $rgt)
     {
         if ($rgt[0] === '%') {
             $rgt[1] /= 100;
@@ -1474,7 +1650,16 @@ class Compiler
         );
     }
 
-    protected function op_color_color($op, $left, $right)
+    /**
+     * @param string $op
+     * @param        array
+     * $left
+     * @param array  $right
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    protected function op_color_color($op, array $left, array $right)
     {
         $out = ['color'];
         $max = count($left) > count($right) ? count($left) : count($right);
@@ -1508,8 +1693,16 @@ class Compiler
         return $this->fixColor($out);
     }
 
-
-    // operator on two numbers
+    /**
+     * operator on two numbers
+     *
+     * @param string $op
+     * @param array  $left
+     * @param array  $right
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     protected function op_number_number($op, $left, $right)
     {
         $unit = empty($left[2]) ? $right[2] : $left[2];
@@ -1546,12 +1739,15 @@ class Compiler
                 throw new GeneralException('parse error: unknown number operator: ' . $op);
         }
 
-        return ["number", $value, $unit];
+        return ['number', $value, $unit];
     }
 
-
-    /* environment functions */
-
+    /**
+     * @param      $type
+     * @param null $selectors
+     *
+     * @return \stdClass
+     */
     protected function makeOutputBlock($type, $selectors = null)
     {
         $b = new \stdClass();
@@ -1564,7 +1760,12 @@ class Compiler
         return $b;
     }
 
-    // the state of execution
+    /**
+     * @param      $parent
+     * @param null $block
+     *
+     * @return \LesserPhp\NodeEnv
+     */
     protected function pushEnv($parent, $block = null)
     {
         $e = new \LesserPhp\NodeEnv();
@@ -1577,7 +1778,11 @@ class Compiler
         return $e;
     }
 
-    // pop something off the stack
+    /**
+     * pop something off the stack
+     *
+     * @return \LesserPhp\NodeEnv
+     */
     protected function popEnv()
     {
         $old = $this->env;
@@ -1586,20 +1791,31 @@ class Compiler
         return $old;
     }
 
-    // set something in the current env
+    /**
+     * set something in the current env
+     *
+     * @param $name
+     * @param $value
+     */
     protected function set($name, $value)
     {
         $this->env->addStore($name, $value);
     }
 
-
-    // get the highest occurrence entry for a name
+    /**
+     * get the highest occurrence entry for a name
+     *
+     * @param $name
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     protected function get($name)
     {
         $current = $this->env;
 
         // track scope to evaluate
-        $scope_secondary = [];
+        $scopeSecondary = [];
 
         $isArguments = $name === $this->vPrefix . 'arguments';
         while ($current) {
@@ -1612,7 +1828,7 @@ class Compiler
             }
             // has secondary scope?
             if (isset($current->storeParent)) {
-                $scope_secondary[] = $current->storeParent;
+                $scopeSecondary[] = $current->storeParent;
             }
 
             if ($current->getParent() !== null) {
@@ -1622,9 +1838,9 @@ class Compiler
             }
         }
 
-        while (count($scope_secondary)) {
+        while (count($scopeSecondary)) {
             // pop one off
-            $current = array_shift($scope_secondary);
+            $current = array_shift($scopeSecondary);
             while ($current) {
                 if ($isArguments && isset($current->arguments)) {
                     return ['list', ' ', $current->arguments];
@@ -1636,7 +1852,7 @@ class Compiler
 
                 // has secondary scope?
                 if (isset($current->storeParent)) {
-                    $scope_secondary[] = $current->storeParent;
+                    $scopeSecondary[] = $current->storeParent;
                 }
 
                 if (isset($current->parent)) {
@@ -1650,11 +1866,17 @@ class Compiler
         throw new GeneralException("variable $name is undefined");
     }
 
-    // inject array of unparsed strings into environment as variables
+    /**
+     * inject array of unparsed strings into environment as variables
+     *
+     * @param array $args
+     *
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     protected function injectVariables(array $args)
     {
         $this->pushEnv($this->env);
-        $parser = new \LesserPhp\Parser($this, __METHOD__);
+        $parser = new Parser($this, __METHOD__);
         foreach ($args as $name => $strValue) {
             if ($name{0} !== '@') {
                 $name = '@' . $name;
@@ -1674,6 +1896,7 @@ class Compiler
      * @param string $name
      *
      * @return string
+     * @throws \LesserPhp\Exception\GeneralException
      */
     public function compile($string, $name = null)
     {
@@ -1704,6 +1927,13 @@ class Compiler
         return $out;
     }
 
+    /**
+     * @param string $fname
+     * @param string $outFname
+     *
+     * @return int|string
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     public function compileFile($fname, $outFname = null)
     {
         if (!is_readable($fname)) {
@@ -1737,7 +1967,7 @@ class Compiler
      * @param boolean $force
      *
      * @return string Compiled CSS results
-     * @throws \Exception
+     * @throws GeneralException
      */
     public function checkedCachedCompile($in, $out, $force = false)
     {
@@ -1768,7 +1998,15 @@ class Compiler
         return $css;
     }
 
-    // compile only if changed input has changed or output doesn't exist
+    /**
+     * compile only if changed input has changed or output doesn't exist
+     *
+     * @param string $in
+     * @param string $out
+     *
+     * @return bool
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     public function checkedCompile($in, $out)
     {
         if (!is_file($out) || filemtime($in) > filemtime($out)) {
@@ -1800,6 +2038,7 @@ class Compiler
      * @param bool  $force Force rebuild?
      *
      * @return array lessphp cache structure
+     * @throws \LesserPhp\Exception\GeneralException
      */
     public function cachedCompile($in, $force = false)
     {
@@ -1846,8 +2085,17 @@ class Compiler
         }
     }
 
-    // parse and compile buffer
-    // This is deprecated
+    /**
+     * parse and compile buffer
+     * This is deprecated
+     *
+     * @param null $str
+     * @param null $initialVariables
+     *
+     * @return int|string
+     * @throws \LesserPhp\Exception\GeneralException
+     * @deprecated
+     */
     public function parse($str = null, $initialVariables = null)
     {
         if (is_array($str)) {
@@ -1861,11 +2109,7 @@ class Compiler
         }
 
         if ($str === null) {
-            if (empty($this->_parseFile)) {
-                throw new GeneralException("nothing to parse");
-            }
-
-            $out = $this->compileFile($this->_parseFile);
+            throw new GeneralException('nothing to parse');
         } else {
             $out = $this->compile($str);
         }
@@ -1875,14 +2119,22 @@ class Compiler
         return $out;
     }
 
+    /**
+     * @param string $name
+     *
+     * @return \LesserPhp\Parser
+     */
     protected function makeParser($name)
     {
-        $parser = new \LesserPhp\Parser($this, $name);
-        $parser->writeComments = $this->preserveComments;
+        $parser = new Parser($this, $name);
+        $parser->setWriteComments($this->preserveComments);
 
         return $parser;
     }
 
+    /**
+     * @param string $name
+     */
     public function setFormatter($name)
     {
         $this->formatterName = $name;
@@ -1915,7 +2167,7 @@ class Compiler
     }
 
     /**
-     * @param string $name
+     * @param string   $name
      * @param callable $func
      */
     public function registerFunction($name, callable $func)
@@ -1984,7 +2236,7 @@ class Compiler
      *
      * @param string $msg
      *
-     * @throws \Exception
+     * @throws GeneralException
      */
     public function throwError($msg = null)
     {
@@ -1994,8 +2246,17 @@ class Compiler
         throw new GeneralException($msg);
     }
 
-    // compile file $in to file $out if $in is newer than $out
-    // returns true when it compiles, false otherwise
+    /**
+     * compile file $in to file $out if $in is newer than $out
+     * returns true when it compiles, false otherwise
+     *
+     * @param                          $in
+     * @param                          $out
+     * @param \LesserPhp\Compiler|null $less
+     *
+     * @return bool
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     public static function ccompile($in, $out, Compiler $less = null)
     {
         if ($less === null) {
@@ -2005,6 +2266,14 @@ class Compiler
         return $less->checkedCompile($in, $out);
     }
 
+    /**
+     * @param                          $in
+     * @param bool                     $force
+     * @param \LesserPhp\Compiler|null $less
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     public static function cexecute($in, $force = false, Compiler $less = null)
     {
         if ($less === null) {

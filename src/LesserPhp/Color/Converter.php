@@ -117,10 +117,7 @@ class Converter
         if ($S === 0) {
             $r = $g = $b = $L;
         } else {
-            $temp2 = $L < 0.5 ?
-                $L * (1.0 + $S) :
-                $L + $S - $L * $S;
-
+            $temp2 = $L < 0.5 ? $L * (1.0 + $S) : $L + $S - $L * $S;
             $temp1 = 2.0 * $L - $temp2;
 
             $r = $this->toRGBHelper($H + 1 / 3, $temp1, $temp2);
@@ -138,9 +135,9 @@ class Converter
     }
 
     /**
-     * @param double $v
-     * @param double $max
-     * @param double $min
+     * @param int $v
+     * @param int $max
+     * @param int $min
      *
      * @return mixed
      */

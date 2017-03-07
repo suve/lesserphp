@@ -16,16 +16,17 @@ namespace LesserPhp\Formatter;
 class Compressed extends Classic
 {
 
-    public $disableSingle = true;
-    public $open = '{';
-    public $assignSeparator = ':';
-    public $break = '';
-
+    /**
+     * Compressed constructor.
+     */
     public function __construct()
     {
-        $this->selectorSeparator = ',';
-        $this->compressColors = true;
-        parent::__construct();
+        $this->setAssignOperator(':');
+        $this->setOpenChar('{');
+        $this->setBreakChar('');
+        $this->setDisabledSingle(true);
+        $this->setSelectorSeparator(',');
+        $this->setCompressColors(true);
     }
 
     /**

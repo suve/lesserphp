@@ -90,6 +90,17 @@ class Parser
     /** @var string */
     private $currentProperty;
 
+    /**
+     * @var bool
+     */
+    private $writeComments = false;
+
+    /**
+     * Parser constructor.
+     *
+     * @param \LesserPhp\Compiler $lessc
+     * @param null                $sourceName
+     */
     public function __construct(Compiler $lessc, $sourceName = null)
     {
         $this->eatWhiteDefault = true;
@@ -97,8 +108,6 @@ class Parser
         $this->lessc = $lessc;
 
         $this->sourceName = $sourceName; // name used for error messages
-
-        $this->writeComments = false;
 
         if (!self::$operatorString) {
             self::$operatorString =
@@ -125,11 +134,6 @@ class Parser
         $this->eatWhiteDefault = true;
         $this->seenComments = [];
 
-        // trim whitespace on head
-        // if (preg_match('/^\s+/', $this->buffer, $m)) {
-        // 	$this->line += substr_count($m[0], "\n");
-        // 	$this->buffer = ltrim($this->buffer);
-        // }
         $this->whitespace();
 
         // parse the entire file
@@ -1715,5 +1719,13 @@ nav ul {
         }
 
         return $out . $text;
+    }
+
+    /**
+     * @param bool $writeComments
+     */
+    public function setWriteComments($writeComments)
+    {
+        $this->writeComments = $writeComments;
     }
 }

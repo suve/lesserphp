@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__.'/vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 /**
  * lesserphp
@@ -42,5 +42,6 @@ require __DIR__.'/vendor/autoload.php';
  */
 class lessc extends \LesserPhp\Compiler
 {
+
     // for compatibilty reasons with older copies of lessphp
 }

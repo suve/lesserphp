@@ -15,10 +15,11 @@ namespace LesserPhp\Formatter;
  */
 interface FormatterInterface
 {
+
     /**
      * @param $block
      *
-     * @return mixed
+     * @return void
      */
     public function block($block);
 
@@ -26,6 +27,11 @@ interface FormatterInterface
 
     public function getCompressColors();
 
+    /**
+     * @param string $name
+     * @param string $value
+     *
+     * @return string
+     */
     public function property($name, $value);
-
 }
