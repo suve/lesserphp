@@ -203,9 +203,7 @@ class Parser
         }
 
         // setting a property
-        if ($this->keyword($key) && $this->assign() &&
-            $this->propertyValue($value, $key) && $this->end()
-        ) {
+        if ($this->keyword($key) && $this->assign() && $this->propertyValue($value, $key) && $this->end()) {
             $this->append(['assign', $key, $value], $s);
 
             return true;
@@ -213,57 +211,26 @@ class Parser
             $this->seek($s);
         }
 
-
         // look for special css blocks
         if ($this->literal('@', false)) {
             $this->count--;
 
             // media
             if ($this->literal('@media')) {
-                if (($this->mediaQueryList($mediaQueries) || true)
-                    && $this->literal('{')
-                ) {
-                    $media = $this->pushSpecialBlock("media");
-                    $media->queries = $mediaQueries === null ? [] : $mediaQueries;
-
-                    return true;
-                } else {
-                    $this->seek($s);
-
-                    return false;
-                }
+                return $this->handleLiteralMedia($s);
             }
 
-            if ($this->literal("@", false) && $this->keyword($dirName)) {
-                if ($this->isDirective($dirName, $this->blockDirectives)) {
-                    if (($this->openString("{", $dirValue, null, [";"]) || true) &&
-                        $this->literal("{")
-                    ) {
-                        $dir = $this->pushSpecialBlock("directive");
-                        $dir->name = $dirName;
-                        if (isset($dirValue)) {
-                            $dir->value = $dirValue;
-                        }
-
+            if ($this->literal('@', false) && $this->keyword($directiveName)) {
+                if ($this->isDirective($directiveName, $this->blockDirectives)) {
+                    if ($this->handleDirectiveBlock($directiveName) === true) {
                         return true;
                     }
-                } elseif ($this->isDirective($dirName, $this->lineDirectives)) {
-                    if ($this->propertyValue($dirValue) && $this->end()) {
-                        $this->append(["directive", $dirName, $dirValue]);
-
+                } elseif ($this->isDirective($directiveName, $this->lineDirectives)) {
+                    if ($this->handleDirectiveLine($directiveName) === true) {
                         return true;
                     }
-                } elseif ($this->literal(":", true)) {
-                    //Ruleset Definition
-                    if (($this->openString("{", $dirValue, null, [";"]) || true) &&
-                        $this->literal("{")
-                    ) {
-                        $dir = $this->pushBlock($this->fixTags(["@" . $dirName]));
-                        $dir->name = $dirName;
-                        if (isset($dirValue)) {
-                            $dir->value = $dirValue;
-                        }
-
+                } elseif ($this->literal(':', true)) {
+                    if ($this->handleRulesetDefinition($directiveName) === true) {
                         return true;
                     }
                 }
@@ -271,7 +238,6 @@ class Parser
 
             $this->seek($s);
         }
-
 
         if ($this->literal('&', false)) {
             $this->count--;
@@ -717,7 +683,8 @@ nav ul {
         $parts = [];
 
         if (($this->literal("only") && ($only = true) || $this->literal("not") && ($not = true) || true) &&
-            $this->keyword($mediaType)) {
+            $this->keyword($mediaType)
+        ) {
             $prop = ["mediaType"];
             if (isset($only)) {
                 $prop[] = "only";
@@ -1085,6 +1052,7 @@ nav ul {
                 break;
             }
         }
+
         return count($tags) !== 0;
     }
 
@@ -1559,6 +1527,7 @@ nav ul {
             $from = $this->count;
         }
         $r = '/' . $regex . '/Ais';
+
         return preg_match($r, $this->buffer, $out, null, $from);
     }
 
@@ -1727,5 +1696,84 @@ nav ul {
     public function setWriteComments($writeComments)
     {
         $this->writeComments = $writeComments;
+    }
+
+    /**
+     * @param $s
+     *
+     * @return bool
+     */
+    protected function handleLiteralMedia($s)
+    {
+        // seriously, this || true is required for this statement to work!?
+        if (($this->mediaQueryList($mediaQueries) || true) && $this->literal('{')) {
+            $media = $this->pushSpecialBlock('media');
+            $media->queries = $mediaQueries === null ? [] : $mediaQueries;
+
+            return true;
+        } else {
+            $this->seek($s);
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $directiveName
+     *
+     * @return bool
+     */
+    protected function handleDirectiveBlock($directiveName)
+    {
+        // seriously, this || true is required for this statement to work!?
+        if (($this->openString('{', $directiveValue, null, [';']) || true) && $this->literal('{')) {
+            $dir = $this->pushSpecialBlock('directive');
+            $dir->name = $directiveName;
+            if ($directiveValue !== null) {
+                $dir->value = $directiveValue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $directiveName
+     *
+     * @return bool
+     */
+    protected function handleDirectiveLine($directiveName)
+    {
+        if ($this->propertyValue($directiveValue) && $this->end()) {
+            $this->append(['directive', $directiveName, $directiveValue]);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $directiveName
+     *
+     * @return bool
+     */
+    protected function handleRulesetDefinition($directiveName)
+    {
+        //Ruleset Definition
+        // seriously, this || true is required for this statement to work!?
+        if (($this->openString('{', $directiveValue, null, [';']) || true) && $this->literal('{')) {
+            $dir = $this->pushBlock($this->fixTags(['@' . $directiveName]));
+            $dir->name = $directiveName;
+            if ($directiveValue !== null) {
+                $dir->value = $directiveValue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }

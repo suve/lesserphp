@@ -349,6 +349,8 @@ class Compiler
      * See lessc::compileProp()
      *
      * @param $block
+     *
+     * @throws \LesserPhp\Exception\GeneralException
      */
     protected function compileBlock($block)
     {
@@ -377,6 +379,8 @@ class Compiler
 
     /**
      * @param $block
+     *
+     * @throws \LesserPhp\Exception\GeneralException
      */
     protected function compileCSSBlock($block)
     {
@@ -469,6 +473,8 @@ class Compiler
     /**
      * @param $block
      * @param $out
+     *
+     * @throws \LesserPhp\Exception\GeneralException
      */
     protected function compileProps($block, $out)
     {
