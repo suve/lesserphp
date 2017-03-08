@@ -1746,17 +1746,15 @@ nav ul {
      *
      * @param int $where
      *
-     * @return bool|int
+     * @return int
      */
     protected function seek($where = null)
     {
-        if ($where === null) {
-            return $this->count;
-        } else {
+        if ($where !== null) {
             $this->count = $where;
         }
 
-        return true;
+        return $this->count;
     }
 
     /* misc functions */
