@@ -50,7 +50,7 @@ class Parser
     static protected $supressDivisionProps =
         ['/border-radius$/i', '/^font$/i'];
 
-    protected $blockDirectives = [
+    private $blockDirectives = [
         'font-face',
         'keyframes',
         'page',
@@ -60,7 +60,7 @@ class Parser
         '-o-viewport',
         '-ms-viewport',
     ];
-    protected $lineDirectives = ['charset'];
+    private $lineDirectives = ['charset'];
 
     /**
      * if we are in parens we can be more liberal with whitespace around
@@ -111,18 +111,23 @@ class Parser
 
         if (!self::$operatorString) {
             self::$operatorString =
-                '(' . implode('|', array_map(['\LesserPhp\Compiler', 'pregQuote'],
-                    array_keys(self::$precedence))) . ')';
+                '(' . implode('|', array_map([Compiler::class, 'pregQuote'], array_keys(self::$precedence))) . ')';
 
-            $commentSingle = \LesserPhp\Compiler::pregQuote(self::$commentSingle);
-            $commentMultiLeft = \LesserPhp\Compiler::pregQuote(self::$commentMultiLeft);
-            $commentMultiRight = \LesserPhp\Compiler::pregQuote(self::$commentMultiRight);
+            $commentSingle = Compiler::pregQuote(self::$commentSingle);
+            $commentMultiLeft = Compiler::pregQuote(self::$commentMultiLeft);
+            $commentMultiRight = Compiler::pregQuote(self::$commentMultiRight);
 
             self::$commentMulti = $commentMultiLeft . '.*?' . $commentMultiRight;
             self::$whitePattern = '/' . $commentSingle . '[^\n]*\s*|(' . self::$commentMulti . ')\s*|\s+/Ais';
         }
     }
 
+    /**
+     * @param $buffer
+     *
+     * @return mixed
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     public function parse($buffer)
     {
         $this->count = 0;
@@ -148,8 +153,8 @@ class Parser
         }
 
         // TODO report where the block was opened
-        if (!property_exists($this->env, 'parent') || !is_null($this->env->parent)) {
-            throw new \Exception('parse error: unclosed block');
+        if (!property_exists($this->env, 'parent') || $this->env->parent !== null) {
+            throw new GeneralException('parse error: unclosed block');
         }
 
         return $this->env;
@@ -190,6 +195,7 @@ class Parser
      * Before parsing a chain, use $s = $this->seek() to remember the current
      * position into $s. Then if a chain fails, use $this->seek($s) to
      * go back where we started.
+     * @throws \LesserPhp\Exception\GeneralException
      */
     protected function parseChunk()
     {
@@ -376,14 +382,19 @@ nav ul {
         return false; // got nothing, throw error
     }
 
-    protected function isDirective($dirname, $directives)
+    /**
+     * @param string $directiveName
+     * @param array $directives
+     *
+     * @return bool
+     */
+    protected function isDirective($directiveName, array $directives)
     {
         // TODO: cache pattern in parser
-        $pattern = implode("|",
-            array_map(['\LesserPhp\Compiler', "pregQuote"], $directives));
+        $pattern = implode('|', array_map([Compiler::class, 'pregQuote'], $directives));
         $pattern = '/^(-[a-z-]+-)?(' . $pattern . ')$/i';
 
-        return preg_match($pattern, $dirname);
+        return (preg_match($pattern, $directiveName) === 1);
     }
 
     /**
@@ -403,7 +414,13 @@ nav ul {
         return $tags;
     }
 
-    // a list of expressions
+    /**
+     * a list of expressions
+     *
+     * @param $exps
+     *
+     * @return bool
+     */
     protected function expressionList(&$exps)
     {
         $values = [];
@@ -416,7 +433,7 @@ nav ul {
             return false;
         }
 
-        $exps = \LesserPhp\Compiler::compressList($values, ' ');
+        $exps = Compiler::compressList($values, ' ');
 
         return true;
     }
@@ -424,6 +441,10 @@ nav ul {
     /**
      * Attempt to consume an expression.
      * @link http://en.wikipedia.org/wiki/Operator-precedence_parser#Pseudo-code
+     *
+     * @param $out
+     *
+     * @return bool
      */
     protected function expression(&$out)
     {
@@ -453,6 +474,11 @@ nav ul {
 
     /**
      * recursively parse infix equation with $lhs at precedence $minP
+     *
+     * @param $lhs
+     * @param $minP
+     *
+     * @return array
      */
     protected function expHelper($lhs, $minP)
     {
@@ -460,19 +486,18 @@ nav ul {
         $ss = $this->seek();
 
         while (true) {
-            $whiteBefore = isset($this->buffer[$this->count - 1]) &&
-                ctype_space($this->buffer[$this->count - 1]);
+            $whiteBefore = isset($this->buffer[$this->count - 1]) && ctype_space($this->buffer[$this->count - 1]);
 
             // If there is whitespace before the operator, then we require
             // whitespace after the operator for it to be an expression
             $needWhite = $whiteBefore && !$this->inParens;
 
-            if ($this->match(self::$operatorString . ($needWhite ? '\s' : ''),
-                    $m) && self::$precedence[$m[1]] >= $minP
+            if ($this->match(self::$operatorString . ($needWhite ? '\s' : ''), $m) &&
+                self::$precedence[$m[1]] >= $minP
             ) {
                 if (!$this->inParens &&
                     isset($this->env->currentProperty) &&
-                    $m[1] === "/" &&
+                    $m[1] === '/' &&
                     empty($this->env->supressedDivision)
                 ) {
                     foreach (self::$supressDivisionProps as $pattern) {
@@ -483,17 +508,15 @@ nav ul {
                     }
                 }
 
-
-                $whiteAfter = isset($this->buffer[$this->count - 1]) &&
-                    ctype_space($this->buffer[$this->count - 1]);
+                $whiteAfter = isset($this->buffer[$this->count - 1]) && ctype_space($this->buffer[$this->count - 1]);
 
                 if (!$this->value($rhs)) {
                     break;
                 }
 
                 // peek for next operator to see what to do with rhs
-                if ($this->peek(self::$operatorString,
-                        $next) && self::$precedence[$next[1]] > self::$precedence[$m[1]]
+                if ($this->peek(self::$operatorString, $next) &&
+                    self::$precedence[$next[1]] > self::$precedence[$m[1]]
                 ) {
                     $rhs = $this->expHelper($rhs, self::$precedence[$next[1]]);
                 }
@@ -512,7 +535,14 @@ nav ul {
         return $lhs;
     }
 
-    // consume a list of values for a property
+    /**
+     * consume a list of values for a property
+     *
+     * @param      $value
+     * @param string $keyName
+     *
+     * @return bool
+     */
     public function propertyValue(&$value, $keyName = null)
     {
         $values = [];
@@ -542,11 +572,16 @@ nav ul {
             return false;
         }
 
-        $value = \LesserPhp\Compiler::compressList($values, ', ');
+        $value = Compiler::compressList($values, ', ');
 
         return true;
     }
 
+    /**
+     * @param $out
+     *
+     * @return bool
+     */
     protected function parenValue(&$out)
     {
         $s = $this->seek();
@@ -573,7 +608,13 @@ nav ul {
         return false;
     }
 
-    // a single value
+    /**
+     * a single value
+     *
+     * @param array $value
+     *
+     * @return bool
+     */
     protected function value(&$value)
     {
         $s = $this->seek();
@@ -644,7 +685,13 @@ nav ul {
         return false;
     }
 
-    // an import statement
+    /**
+     * an import statement
+     *
+     * @param array $out
+     *
+     * @return bool|null
+     */
     protected function import(&$out)
     {
         if (!$this->literal('@import')) {
@@ -661,9 +708,14 @@ nav ul {
             return true;
         }
 
-        return null;
+        return false;
     }
 
+    /**
+     * @param $out
+     *
+     * @return bool
+     */
     protected function mediaQueryList(&$out)
     {
         if ($this->genericList($list, "mediaQuery", ",", false)) {
@@ -675,6 +727,11 @@ nav ul {
         return false;
     }
 
+    /**
+     * @param $out
+     *
+     * @return bool
+     */
     protected function mediaQuery(&$out)
     {
         $s = $this->seek();
@@ -719,6 +776,11 @@ nav ul {
         return true;
     }
 
+    /**
+     * @param $out
+     *
+     * @return bool
+     */
     protected function mediaExpression(&$out)
     {
         $s = $this->seek();
@@ -745,17 +807,26 @@ nav ul {
         return false;
     }
 
-    // an unbounded string stopped by $end
+    /**
+     * an unbounded string stopped by $end
+     *
+     * @param      $end
+     * @param      $out
+     * @param null $nestingOpen
+     * @param null $rejectStrs
+     *
+     * @return bool
+     */
     protected function openString($end, &$out, $nestingOpen = null, $rejectStrs = null)
     {
         $oldWhite = $this->eatWhiteDefault;
         $this->eatWhiteDefault = false;
 
         $stop = ["'", '"', "@{", $end];
-        $stop = array_map(['\LesserPhp\Compiler', "pregQuote"], $stop);
+        $stop = array_map([Compiler::class, 'pregQuote'], $stop);
         // $stop[] = self::$commentMulti;
 
-        if (!is_null($rejectStrs)) {
+        if ($rejectStrs !== null) {
             $stop = array_merge($stop, $rejectStrs);
         }
 
@@ -817,6 +888,11 @@ nav ul {
         return true;
     }
 
+    /**
+     * @param $out
+     *
+     * @return bool
+     */
     protected function stringValue(&$out)
     {
         $s = $this->seek();
@@ -832,7 +908,7 @@ nav ul {
 
         // look for either ending delim , escape, or string interpolation
         $patt = '([^\n]*?)(@\{|\\\\|' .
-            \LesserPhp\Compiler::pregQuote($delim) . ')';
+            Compiler::pregQuote($delim) . ')';
 
         $oldWhite = $this->eatWhiteDefault;
         $this->eatWhiteDefault = false;
@@ -871,6 +947,11 @@ nav ul {
         return false;
     }
 
+    /**
+     * @param $out
+     *
+     * @return bool
+     */
     protected function interpolation(&$out)
     {
         $oldWhite = $this->eatWhiteDefault;
@@ -896,6 +977,11 @@ nav ul {
         return false;
     }
 
+    /**
+     * @param $unit
+     *
+     * @return bool
+     */
     protected function unit(&$unit)
     {
         // speed shortcut
@@ -915,7 +1001,14 @@ nav ul {
         return false;
     }
 
-    // a # color
+
+    /**
+     * a # color
+     *
+     * @param $out
+     *
+     * @return bool
+     */
     protected function color(&$out)
     {
         if ($this->match('(#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3}))', $m)) {
@@ -931,11 +1024,19 @@ nav ul {
         return false;
     }
 
-    // consume an argument definition list surrounded by ()
-    // each argument is a variable name with optional value
-    // or at the end a ... or a variable named followed by ...
-    // arguments are separated by , unless a ; is in the list, then ; is the
-    // delimiter.
+    /**
+     * consume an argument definition list surrounded by ()
+     * each argument is a variable name with optional value
+     * or at the end a ... or a variable named followed by ...
+     * arguments are separated by , unless a ; is in the list, then ; is the
+     * delimiter.
+     *
+     * @param $args
+     * @param $isVararg
+     *
+     * @return bool
+     * @throws \LesserPhp\Exception\GeneralException
+     */
     protected function argumentDef(&$args, &$isVararg)
     {
         $s = $this->seek();
@@ -1041,8 +1142,16 @@ nav ul {
         return true;
     }
 
-    // consume a list of tags
-    // this accepts a hanging delimiter
+    /**
+     * consume a list of tags
+     * this accepts a hanging delimiter
+     *
+     * @param array  $tags
+     * @param bool   $simple
+     * @param string $delim
+     *
+     * @return bool
+     */
     protected function tags(&$tags, $simple = false, $delim = ',')
     {
         $tags = [];
@@ -1056,8 +1165,14 @@ nav ul {
         return count($tags) !== 0;
     }
 
-    // list of tags of specifying mixin path
-    // optionally separated by > (lazy, accepts extra >)
+    /**
+     * list of tags of specifying mixin path
+     * optionally separated by > (lazy, accepts extra >)
+     *
+     * @param array $tags
+     *
+     * @return bool
+     */
     protected function mixinTags(&$tags)
     {
         $tags = [];
@@ -1069,7 +1184,14 @@ nav ul {
         return count($tags) !== 0;
     }
 
-    // a bracketed value (contained within in a tag definition)
+    /**
+     * a bracketed value (contained within in a tag definition)
+     *
+     * @param array $parts
+     * @param bool $hasExpression
+     *
+     * @return bool
+     */
     protected function tagBracket(&$parts, &$hasExpression)
     {
         // speed shortcut
@@ -1142,7 +1264,14 @@ nav ul {
         return false;
     }
 
-    // a space separated list of selectors
+    /**
+     * a space separated list of selectors
+     *
+     * @param      $tag
+     * @param bool $simple
+     *
+     * @return bool
+     */
     protected function tag(&$tag, $simple = false)
     {
         if ($simple) {
@@ -1216,7 +1345,13 @@ nav ul {
         return true;
     }
 
-    // a css function
+    /**
+     * a css function
+     *
+     * @param array $func
+     *
+     * @return bool
+     */
     protected function func(&$func)
     {
         $s = $this->seek();
@@ -1265,7 +1400,13 @@ nav ul {
         return false;
     }
 
-    // consume a less variable
+    /**
+     * consume a less variable
+     *
+     * @param $name
+     *
+     * @return bool
+     */
     protected function variable(&$name)
     {
         $s = $this->seek();
@@ -1304,7 +1445,13 @@ nav ul {
         return $this->literal(':') || $this->literal('=');
     }
 
-    // consume a keyword
+    /**
+     * consume a keyword
+     *
+     * @param $word
+     *
+     * @return bool
+     */
     protected function keyword(&$word)
     {
         if ($this->match('([\w_\-\*!"][\w\-_"]*)', $m)) {
@@ -1316,12 +1463,16 @@ nav ul {
         return false;
     }
 
-    // consume an end of statement delimiter
+    /**
+     * consume an end of statement delimiter
+     *
+     * @return bool
+     */
     protected function end()
     {
         if ($this->literal(';', false)) {
             return true;
-        } elseif ($this->count == strlen($this->buffer) || $this->buffer[$this->count] === '}') {
+        } elseif ($this->count === strlen($this->buffer) || $this->buffer[$this->count] === '}') {
             // if there is end of file or a closing block next then we don't need a ;
             return true;
         }
@@ -1329,6 +1480,11 @@ nav ul {
         return false;
     }
 
+    /**
+     * @param $guards
+     *
+     * @return bool
+     */
     protected function guards(&$guards)
     {
         $s = $this->seek();
@@ -1358,7 +1514,13 @@ nav ul {
         return true;
     }
 
-    // a bunch of guards that are and'd together
+    /**
+     * a bunch of guards that are and'd together
+     *
+     * @param $guardGroup
+     *
+     * @return bool
+     */
     protected function guardGroup(&$guardGroup)
     {
         $s = $this->seek();
@@ -1380,6 +1542,11 @@ nav ul {
         return true;
     }
 
+    /**
+     * @param $guard
+     *
+     * @return bool
+     */
     protected function guard(&$guard)
     {
         $s = $this->seek();
@@ -1401,6 +1568,12 @@ nav ul {
 
     /* raw parsing functions */
 
+    /**
+     * @param string $what
+     * @param bool $eatWhitespace
+     *
+     * @return bool
+     */
     protected function literal($what, $eatWhitespace = null)
     {
         if ($eatWhitespace === null) {
@@ -1409,7 +1582,7 @@ nav ul {
 
         // shortcut on single letter
         if (!isset($what[1]) && isset($this->buffer[$this->count])) {
-            if ($this->buffer[$this->count] == $what) {
+            if ($this->buffer[$this->count] === $what) {
                 if (!$eatWhitespace) {
                     $this->count++;
 
@@ -1422,14 +1595,23 @@ nav ul {
         }
 
         if (!isset(self::$literalCache[$what])) {
-            self::$literalCache[$what] = \LesserPhp\Compiler::pregQuote($what);
+            self::$literalCache[$what] = Compiler::pregQuote($what);
         }
 
         return $this->match(self::$literalCache[$what], $m, $eatWhitespace);
     }
 
+    /**
+     * @param        $out
+     * @param string $parseItem
+     * @param string $delim
+     * @param bool   $flatten
+     *
+     * @return bool
+     */
     protected function genericList(&$out, $parseItem, $delim = "", $flatten = true)
     {
+        // $parseItem is one of mediaQuery, mediaExpression
         $s = $this->seek();
         $items = [];
         while ($this->$parseItem($value)) {
@@ -1456,18 +1638,27 @@ nav ul {
         return true;
     }
 
-
-    // advance counter to next occurrence of $what
-    // $until - don't include $what in advance
-    // $allowNewline, if string, will be used as valid char set
+    /**
+     * advance counter to next occurrence of $what
+     * $until - don't include $what in advance
+     * $allowNewline, if string, will be used as valid char set
+     *
+     * @param      $what
+     * @param      $out
+     * @param bool $until
+     * @param bool $allowNewline
+     *
+     * @return bool
+     */
     protected function to($what, &$out, $until = false, $allowNewline = false)
     {
+        die('this seems not to be used, tests dont break');
         if (is_string($allowNewline)) {
             $validChars = $allowNewline;
         } else {
             $validChars = $allowNewline ? "." : "[^\n]";
         }
-        if (!$this->match('(' . $validChars . '*?)' . \LesserPhp\Compiler::pregQuote($what), $m, !$until)) {
+        if (!$this->match('(' . $validChars . '*?)' . Compiler::pregQuote($what), $m, !$until)) {
             return false;
         }
         if ($until) {
@@ -1478,7 +1669,15 @@ nav ul {
         return true;
     }
 
-    // try to match something on head of buffer
+    /**
+     * try to match something on head of buffer
+     *
+     * @param string $regex
+     * @param      $out
+     * @param bool $eatWhitespace
+     *
+     * @return bool
+     */
     protected function match($regex, &$out, $eatWhitespace = null)
     {
         if ($eatWhitespace === null) {
@@ -1498,7 +1697,11 @@ nav ul {
         return false;
     }
 
-    // match some whitespace
+    /**
+     * match some whitespace
+     *
+     * @return bool
+     */
     protected function whitespace()
     {
         if ($this->writeComments) {
@@ -1513,14 +1716,21 @@ nav ul {
             }
 
             return $gotWhite;
-        } else {
-            $this->match("", $m);
-
-            return strlen($m[0]) > 0;
         }
+
+        $this->match("", $m);
+        return strlen($m[0]) > 0;
     }
 
-    // match something without consuming it
+    /**
+     * match something without consuming it
+     *
+     * @param string $regex
+     * @param array $out
+     * @param int $from
+     *
+     * @return int
+     */
     protected function peek($regex, &$out = null, $from = null)
     {
         if ($from === null) {
@@ -1531,7 +1741,13 @@ nav ul {
         return preg_match($r, $this->buffer, $out, null, $from);
     }
 
-    // seek to a spot in the buffer or return where we are on no argument
+    /**
+     * seek to a spot in the buffer or return where we are on no argument
+     *
+     * @param int $where
+     *
+     * @return bool|int
+     */
     protected function seek($where = null)
     {
         if ($where === null) {
@@ -1545,12 +1761,17 @@ nav ul {
 
     /* misc functions */
 
-    public function throwError($msg = "parse error", $count = null)
+    /**
+     * @param string $msg
+     * @param int $count
+     *
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    public function throwError($msg = 'parse error', $count = null)
     {
         $count = $count === null ? $this->count : $count;
 
-        $line = $this->line +
-            substr_count(substr($this->buffer, 0, $count), "\n");
+        $line = $this->line + substr_count(substr($this->buffer, 0, $count), "\n");
 
         if (!empty($this->sourceName)) {
             $loc = "$this->sourceName on line $line";
@@ -1566,6 +1787,12 @@ nav ul {
         }
     }
 
+    /**
+     * @param null $selectors
+     * @param null $type
+     *
+     * @return \stdClass
+     */
     protected function pushBlock($selectors = null, $type = null)
     {
         $b = new \stdClass();
@@ -1593,13 +1820,24 @@ nav ul {
         return $b;
     }
 
-    // push a block that doesn't multiply tags
+    /**
+     * push a block that doesn't multiply tags
+     *
+     * @param $type
+     *
+     * @return \stdClass
+     */
     protected function pushSpecialBlock($type)
     {
         return $this->pushBlock(null, $type);
     }
 
-    // append a property to the current block
+    /**
+     * append a property to the current block
+     *
+     * @param      $prop
+     * @param  $pos
+     */
     protected function append($prop, $pos = null)
     {
         if ($pos !== null) {
@@ -1608,7 +1846,11 @@ nav ul {
         $this->env->props[] = $prop;
     }
 
-    // pop something off the stack
+    /**
+     * pop something off the stack
+     *
+     * @return mixed
+     */
     protected function pop()
     {
         $old = $this->env;
@@ -1617,8 +1859,14 @@ nav ul {
         return $old;
     }
 
-    // remove comments from $text
-    // todo: make it work for all functions, not just url
+    /**
+     * remove comments from $text
+     * todo: make it work for all functions, not just url
+     *
+     * @param string $text
+     *
+     * @return string
+     */
     protected function removeComments($text)
     {
         $look = [
@@ -1634,9 +1882,9 @@ nav ul {
         while (true) {
             // find the next item
             foreach ($look as $token) {
-                $pos = strpos($text, $token);
+                $pos = mb_strpos($text, $token);
                 if ($pos !== false) {
-                    if (!isset($min) || $pos < $min[1]) {
+                    if ($min === null || $pos < $min[1]) {
                         $min = [$token, $pos];
                     }
                 }
@@ -1652,37 +1900,37 @@ nav ul {
             switch ($min[0]) {
                 case 'url(':
                     if (preg_match('/url\(.*?\)/', $text, $m, 0, $count)) {
-                        $count += strlen($m[0]) - strlen($min[0]);
+                        $count += mb_strlen($m[0]) - mb_strlen($min[0]);
                     }
                     break;
                 case '"':
                 case "'":
                     if (preg_match('/' . $min[0] . '.*?(?<!\\\\)' . $min[0] . '/', $text, $m, 0, $count)) {
-                        $count += strlen($m[0]) - 1;
+                        $count += mb_strlen($m[0]) - 1;
                     }
                     break;
                 case '//':
-                    $skip = strpos($text, "\n", $count);
+                    $skip = mb_strpos($text, "\n", $count);
                     if ($skip === false) {
-                        $skip = strlen($text) - $count;
+                        $skip = mb_strlen($text) - $count;
                     } else {
                         $skip -= $count;
                     }
                     break;
                 case '/*':
                     if (preg_match('/\/\*.*?\*\//s', $text, $m, 0, $count)) {
-                        $skip = strlen($m[0]);
-                        $newlines = substr_count($m[0], "\n");
+                        $skip = mb_strlen($m[0]);
+                        $newlines = mb_substr_count($m[0], "\n");
                     }
                     break;
             }
 
-            if ($skip == 0) {
-                $count += strlen($min[0]);
+            if ($skip === 0) {
+                $count += mb_strlen($min[0]);
             }
 
-            $out .= substr($text, 0, $count) . str_repeat("\n", $newlines);
-            $text = substr($text, $count + $skip);
+            $out .= mb_substr($text, 0, $count) . str_repeat("\n", $newlines);
+            $text = mb_substr($text, $count + $skip);
 
             $min = null;
         }

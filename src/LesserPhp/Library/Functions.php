@@ -632,10 +632,7 @@ class Functions
     public function luma($color)
     {
         $color = $this->coerce->coerceColor($color);
-
-        // todo why this changed semantics?
         return (0.2126 * $color[1] / 255) + (0.7152 * $color[2] / 255) + (0.0722 * $color[3] / 255);
-        //return (0.2126 * $color[0] / 255) + (0.7152 * $color[1] / 255) + (0.0722 * $color[2] / 255);
     }
 
 
@@ -721,7 +718,11 @@ class Functions
         throw new GeneralException("Cannot convert {$from} to {$to}");
     }
 
-
+    /**
+     * @param bool $a
+     *
+     * @return array
+     */
     public function toBool($a)
     {
         if ($a) {
@@ -741,7 +742,7 @@ class Functions
     public function findImport($url)
     {
         foreach ($this->compiler->getImportDirs() as $dir) {
-            $full = $dir . (substr($dir, -1) !== '/' ? '/' : '') . $url;
+            $full = $dir . (mb_substr($dir, -1) !== '/' ? '/' : '') . $url;
             if ($this->fileExists($file = $full . '.less') || $this->fileExists($file = $full)) {
                 return $file;
             }

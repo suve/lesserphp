@@ -179,35 +179,6 @@ class Compiler
     }
 
     /**
-     * attempts to find the path of an import url, returns null for css files
-     *
-     * @param $url
-     *
-     * @return null|string
-     */
-    protected function findImport($url)
-    {
-        foreach ($this->importDirs as $dir) {
-            $full = $dir . (mb_substr($dir, -1) !== '/' ? '/' : '') . $url;
-            if ($this->fileExists($file = $full . '.less') || $this->fileExists($file = $full)) {
-                return $file;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return bool
-     */
-    protected function fileExists($name)
-    {
-        return is_file($name);
-    }
-
-    /**
      * @param array $items
      * @param       $delim
      *
@@ -258,7 +229,7 @@ class Compiler
             return false;
         }
 
-        $realPath = $this->findImport($url);
+        $realPath = $this->functions->findImport($url);
 
         if ($realPath === null) {
             return false;
@@ -444,10 +415,10 @@ class Compiler
     }
 
     /**
-     * @param $block
-     * @param $selectors
+     * @param          $block
+     * @param string[] $selectors
      */
-    protected function compileNestedBlock($block, $selectors)
+    protected function compileNestedBlock($block, array $selectors)
     {
         $this->pushEnv($this->env, $block);
         $this->scope = $this->makeOutputBlock($block->type, $selectors);
@@ -1240,7 +1211,7 @@ class Compiler
         }
         list($color, $delta) = $args[2];
         $color = $this->assertions->assertColor($color);
-        $delta = (float)$delta[1];
+        $delta = (float) $delta[1];
 
         return [$color, $delta];
     }
@@ -1267,7 +1238,7 @@ class Compiler
             $i = 0;
             foreach ($rawComponents as $c) {
                 $val = $this->reduce($c);
-                $val = isset($val[1]) ? (float)$val[1] : 0;
+                $val = isset($val[1]) ? (float) $val[1] : 0;
 
                 if ($i === 0) {
                     $clamp = 360;
@@ -1296,13 +1267,13 @@ class Compiler
                     if ($c[0] === "number" && $c[2] === "%") {
                         $components[] = 255 * ($c[1] / 100);
                     } else {
-                        $components[] = (float)$c[1];
+                        $components[] = (float) $c[1];
                     }
                 } elseif ($i === 4) {
                     if ($c[0] === "number" && $c[2] === "%") {
                         $components[] = 1.0 * ($c[1] / 100);
                     } else {
-                        $components[] = (float)$c[1];
+                        $components[] = (float) $c[1];
                     }
                 } else {
                     break;
@@ -1493,20 +1464,6 @@ class Compiler
     }
 
     /**
-     * @param $a
-     *
-     * @return array
-     */
-    public function toBool($a)
-    {
-        if ($a) {
-            return self::$TRUE;
-        } else {
-            return self::$FALSE;
-        }
-    }
-
-    /**
      * evaluate an expression
      *
      * @param array $exp
@@ -1535,11 +1492,11 @@ class Compiler
 
         // operators that work on all types
         if ($op === "and") {
-            return $this->toBool($left == self::$TRUE && $right == self::$TRUE);
+            return $this->functions->toBool($left == self::$TRUE && $right == self::$TRUE);
         }
 
         if ($op === "=") {
-            return $this->toBool($this->equals($left, $right));
+            return $this->functions->toBool($this->equals($left, $right));
         }
 
         $str = $this->stringConcatenate($left, $right);
@@ -1734,13 +1691,13 @@ class Compiler
                 $value = $left[1] / $right[1];
                 break;
             case '<':
-                return $this->toBool($left[1] < $right[1]);
+                return $this->functions->toBool($left[1] < $right[1]);
             case '>':
-                return $this->toBool($left[1] > $right[1]);
+                return $this->functions->toBool($left[1] > $right[1]);
             case '>=':
-                return $this->toBool($left[1] >= $right[1]);
+                return $this->functions->toBool($left[1] >= $right[1]);
             case '=<':
-                return $this->toBool($left[1] <= $right[1]);
+                return $this->functions->toBool($left[1] <= $right[1]);
             default:
                 throw new GeneralException('parse error: unknown number operator: ' . $op);
         }
@@ -1774,7 +1731,7 @@ class Compiler
      */
     protected function pushEnv($parent, $block = null)
     {
-        $e = new \LesserPhp\NodeEnv();
+        $e = new NodeEnv();
         $e->setParent($parent);
         $e->setBlock($block);
         $e->setStore([]);
@@ -1875,7 +1832,7 @@ class Compiler
     /**
      * inject array of unparsed strings into environment as variables
      *
-     * @param array $args
+     * @param string[] $args
      *
      * @throws \LesserPhp\Exception\GeneralException
      */
@@ -1888,7 +1845,7 @@ class Compiler
                 $name = '@' . $name;
             }
             $parser->count = 0;
-            $parser->buffer = (string)$strValue;
+            $parser->buffer = (string) $strValue;
             if (!$parser->propertyValue($value)) {
                 throw new GeneralException("failed to parse passed in variable $name: $strValue");
             }
