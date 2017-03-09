@@ -4,8 +4,6 @@ filter:
 before_commands:
     - 'composer install'
 tools:
-    external_code_coverage:
-        timeout: 300
     php_code_sniffer: true
     php_cpd:
         enabled: true
