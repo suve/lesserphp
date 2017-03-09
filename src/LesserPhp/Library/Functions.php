@@ -39,12 +39,12 @@ class Functions
      */
     private $converter;
 
-    static public $TRUE = ["keyword", "true"];
-    static public $FALSE = ["keyword", "false"];
-    static public $lengths = ["px", "m", "cm", "mm", "in", "pt", "pc"];
-    static public $times = ["s", "ms"];
-    static public $angles = ["rad", "deg", "grad", "turn"];
-    static public $lengths_to_base = [1, 3779.52755906, 37.79527559, 3.77952756, 96, 1.33333333, 16];
+    public static $TRUE = ["keyword", "true"];
+    public static $FALSE = ["keyword", "false"];
+    public static $lengths = ["px", "m", "cm", "mm", "in", "pt", "pc"];
+    public static $times = ["s", "ms"];
+    public static $angles = ["rad", "deg", "grad", "turn"];
+    public static $lengths_to_base = [1, 3779.52755906, 37.79527559, 3.77952756, 96, 1.33333333, 16];
 
 
     public function __construct(Assertions $assertions, Coerce $coerce, Compiler $compiler, Converter $converter)

@@ -17,7 +17,6 @@ use LesserPhp\Exception\GeneralException;
  */
 class Assertions
 {
-
     private $coerce;
 
     public function __construct(Coerce $coerce)
@@ -68,7 +67,6 @@ class Assertions
     {
         if ($value[0] !== "list" || $value[1] !== ",") {
             throw new GeneralException("expecting list");
-
         }
         $values = $value[2];
         $numValues = count($values);

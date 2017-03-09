@@ -15,7 +15,6 @@ namespace LesserPhp;
  */
 class Color
 {
-
     const HSL = 'hsl';
     const RGB = 'rgb';
 
@@ -87,5 +86,4 @@ class Color
     {
         return $this->alpha;
     }
-
 }
