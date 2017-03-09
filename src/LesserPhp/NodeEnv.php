@@ -15,7 +15,6 @@ namespace LesserPhp;
  */
 class NodeEnv
 {
-
     public $seenNames;
 
     /**

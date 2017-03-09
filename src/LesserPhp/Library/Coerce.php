@@ -15,8 +15,7 @@ namespace LesserPhp\Library;
  */
 class Coerce
 {
-
-    static protected $cssColors = [
+    protected static $cssColors = [
         'aliceblue' => '240,248,255',
         'antiquewhite' => '250,235,215',
         'aqua' => '0,255,255',

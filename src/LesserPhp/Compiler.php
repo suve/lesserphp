@@ -47,11 +47,10 @@ use LesserPhp\Library\Functions;
  */
 class Compiler
 {
-
     const VERSION = 'v0.5.1';
 
-    static public $TRUE = ['keyword', 'true'];
-    static public $FALSE = ['keyword', 'false'];
+    public static $TRUE = ['keyword', 'true'];
+    public static $FALSE = ['keyword', 'false'];
 
     /**
      * @var callable[]
@@ -118,7 +117,7 @@ class Compiler
     /**
      * @var int $nextImportId uniquely identify imports
      */
-    static private $nextImportId = 0;
+    private static $nextImportId = 0;
 
     /**
      * @var Parser
@@ -1111,23 +1110,23 @@ class Compiler
     }
 
 
-	/**
-	 * Compiles a primitive value into a CSS property value.
-	 *
-	 * Values in lessphp are typed by being wrapped in arrays, their format is
-	 * typically:
-	 *
-	 *     array(type, contents [, additional_contents]*)
-	 *
-	 * The input is expected to be reduced. This function will not work on
-	 * things like expressions and variables.
-	 *
-	 * @param array $value
-	 * @param array $options
-	 *
-	 * @return string
-	 * @throws GeneralException
-	 */
+    /**
+     * Compiles a primitive value into a CSS property value.
+     *
+     * Values in lessphp are typed by being wrapped in arrays, their format is
+     * typically:
+     *
+     *     array(type, contents [, additional_contents]*)
+     *
+     * The input is expected to be reduced. This function will not work on
+     * things like expressions and variables.
+     *
+     * @param array $value
+     * @param array $options
+     *
+     * @return string
+     * @throws GeneralException
+     */
     public function compileValue(array $value, array $options = [])
     {
         try {
@@ -1209,7 +1208,6 @@ class Compiler
             }
 
             return $this->converter->toRGB($hsl);
-
         } elseif ($fname === 'rgb' || $fname === 'rgba') {
             $components = [];
             $i = 1;
@@ -2055,9 +2053,9 @@ class Compiler
         $this->formatterName = $name;
     }
 
-	public function setFormatterClass($formatter)
-	{
-		$this->formatter = $formatter;
+    public function setFormatterClass($formatter)
+    {
+        $this->formatter = $formatter;
     }
 
     /**

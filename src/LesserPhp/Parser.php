@@ -19,10 +19,9 @@ use LesserPhp\Exception\GeneralException;
  */
 class Parser
 {
+    protected static $nextBlockId = 0; // used to uniquely identify blocks
 
-    static protected $nextBlockId = 0; // used to uniquely identify blocks
-
-    static protected $precedence = [
+    protected static $precedence = [
         '=<' => 0,
         '>=' => 0,
         '=' => 0,
@@ -36,18 +35,18 @@ class Parser
         '%' => 2,
     ];
 
-    static protected $whitePattern;
-    static protected $commentMulti;
+    protected static $whitePattern;
+    protected static $commentMulti;
 
-    static protected $commentSingle = "//";
-    static protected $commentMultiLeft = "/*";
-    static protected $commentMultiRight = "*/";
+    protected static $commentSingle = "//";
+    protected static $commentMultiLeft = "/*";
+    protected static $commentMultiRight = "*/";
 
     // regex string to match any of the operators
-    static protected $operatorString;
+    protected static $operatorString;
 
     // these properties will supress division unless it's inside parenthases
-    static protected $supressDivisionProps =
+    protected static $supressDivisionProps =
         ['/border-radius$/i', '/^font$/i'];
 
     private $blockDirectives = [
@@ -74,7 +73,7 @@ class Parser
     protected $inParens = false;
 
     // caches preg escaped literals
-    static protected $literalCache = [];
+    protected static $literalCache = [];
     /** @var int */
     public $count;
     /** @var int */
@@ -147,7 +146,7 @@ class Parser
         }
 
         if ($this->count !== strlen($this->buffer)) {
-//            var_dump($this->count);
+            //            var_dump($this->count);
 //            var_dump($this->buffer);
             $this->throwError();
         }
@@ -1117,7 +1116,6 @@ nav ul {
                                 $newArg = ["lit", $newList];
                                 break;
                         }
-
                     } elseif ($values) { // 1 item
                         $newArg = $values[0];
                     }

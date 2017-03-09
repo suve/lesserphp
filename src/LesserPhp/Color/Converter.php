@@ -51,7 +51,6 @@ class Converter
             } elseif ($b == $max) {
                 $H = 4.0 + ($r - $g) / ($max - $min);
             }
-
         }
 
         $out = [
