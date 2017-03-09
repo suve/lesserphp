@@ -1111,88 +1111,40 @@ class Compiler
     }
 
 
-    /**
-     * Compiles a primitive value into a CSS property value.
-     *
-     * Values in lessphp are typed by being wrapped in arrays, their format is
-     * typically:
-     *
-     *     array(type, contents [, additional_contents]*)
-     *
-     * The input is expected to be reduced. This function will not work on
-     * things like expressions and variables.
-     *
-     * @param array $value
-     *
-     * @return string
-     * @throws \LesserPhp\Exception\GeneralException
-     */
-    public function compileValue(array $value)
+	/**
+	 * Compiles a primitive value into a CSS property value.
+	 *
+	 * Values in lessphp are typed by being wrapped in arrays, their format is
+	 * typically:
+	 *
+	 *     array(type, contents [, additional_contents]*)
+	 *
+	 * The input is expected to be reduced. This function will not work on
+	 * things like expressions and variables.
+	 *
+	 * @param array $value
+	 * @param array $options
+	 *
+	 * @return string
+	 * @throws GeneralException
+	 */
+    public function compileValue(array $value, array $options = [])
     {
-        switch ($value[0]) {
-            case 'list':
-                // [1] - delimiter
-                // [2] - array of values
-                return implode($value[1], array_map([$this, 'compileValue'], $value[2]));
-            case 'raw_color':
-                if ($this->formatter->getCompressColors()) {
-                    return $this->compileValue($this->coerce->coerceColor($value));
-                }
+        try {
+            if (!isset($value[0])) {
+                throw new GeneralException('Missing value type');
+            }
 
-                return $value[1];
-            case 'keyword':
-                // [1] - the keyword
-                return $value[1];
-            case 'number':
-                list(, $num, $unit) = $value;
-                // [1] - the number
-                // [2] - the unit
-                if ($this->numberPrecision !== null) {
-                    $num = round($num, $this->numberPrecision);
-                }
+            $options = array_replace([
+                'numberPrecision' => $this->numberPrecision,
+                'compressColors'  => ($this->formatter ? $this->formatter->getCompressColors() : false),
+            ], $options);
 
-                return $num . $unit;
-            case 'string':
-                // [1] - contents of string (includes quotes)
-                list(, $delim, $content) = $value;
-                foreach ($content as &$part) {
-                    if (is_array($part)) {
-                        $part = $this->compileValue($part);
-                    }
-                }
+            $valueClass = \LesserPhp\Compiler\Value\AbstractValue::factory($this, $this->coerce, $options, $value);
 
-                return $delim . implode($content) . $delim;
-            case 'color':
-                // [1] - red component (either number or a %)
-                // [2] - green component
-                // [3] - blue component
-                // [4] - optional alpha component
-                list(, $r, $g, $b) = $value;
-                $r = round($r);
-                $g = round($g);
-                $b = round($b);
-
-                if (count($value) === 5 && $value[4] != 1) { // rgba
-                    return 'rgba(' . $r . ',' . $g . ',' . $b . ',' . $value[4] . ')';
-                }
-
-                $h = sprintf("#%02x%02x%02x", $r, $g, $b);
-
-                if ($this->formatter->getCompressColors()) {
-                    // Converting hex color to short notation (e.g. #003399 to #039)
-                    if ($h[1] === $h[2] && $h[3] === $h[4] && $h[5] === $h[6]) {
-                        $h = '#' . $h[1] . $h[3] . $h[5];
-                    }
-                }
-
-                return $h;
-
-            case 'function':
-                list(, $name, $args) = $value;
-
-                return $name . '(' . $this->compileValue($args) . ')';
-            default: // assumed to be unit
-                throw new GeneralException('unknown value type: ' . $value[0]);
+            return $valueClass->getCompiled();
+        } catch (\UnexpectedValueException $e) {
+            throw new GeneralException($e->getMessage());
         }
     }
 
@@ -2101,6 +2053,11 @@ class Compiler
     public function setFormatter($name)
     {
         $this->formatterName = $name;
+    }
+
+	public function setFormatterClass($formatter)
+	{
+		$this->formatter = $formatter;
     }
 
     /**
