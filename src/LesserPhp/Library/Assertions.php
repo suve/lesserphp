@@ -17,14 +17,27 @@ use LesserPhp\Exception\GeneralException;
  */
 class Assertions
 {
+
     private $coerce;
 
+    /**
+     * Assertions constructor.
+     *
+     * @param \LesserPhp\Library\Coerce $coerce
+     */
     public function __construct(Coerce $coerce)
     {
         $this->coerce = $coerce;
     }
 
-    public function assertColor($value, $error = "expected color value")
+    /**
+     * @param array  $value
+     * @param string $error
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    public function assertColor(array $value, $error = 'expected color value')
     {
         $color = $this->coerce->coerceColor($value);
         if ($color === null) {
@@ -34,27 +47,42 @@ class Assertions
         return $color;
     }
 
-    public function assertNumber($value, $error = "expecting number")
+    /**
+     * @param array  $value
+     * @param string $error
+     *
+     * @return mixed
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    public function assertNumber(array $value, $error = 'expecting number')
     {
-        if ($value[0] === "number") {
+        if ($value[0] === 'number') {
             return $value[1];
         }
         throw new GeneralException($error);
     }
 
-    public function assertArgs($value, $expectedArgs, $name = "")
+    /**
+     * @param array  $value
+     * @param int    $expectedArgs
+     * @param string $name
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    public function assertArgs(array $value, $expectedArgs, $name = '')
     {
-        if ($expectedArgs == 1) {
+        if ($expectedArgs === 1) {
             return $value;
         } else {
-            if ($value[0] !== "list" || $value[1] !== ",") {
+            if ($value[0] !== 'list' || $value[1] !== ',') {
                 throw new GeneralException('expecting list');
             }
             $values = $value[2];
             $numValues = count($values);
-            if ($expectedArgs != $numValues) {
+            if ($expectedArgs !== $numValues) {
                 if ($name) {
-                    $name .= ": ";
+                    $name .= ': ';
                 }
                 throw new GeneralException("${name}expecting $expectedArgs arguments, got $numValues");
             }
@@ -63,16 +91,24 @@ class Assertions
         }
     }
 
-    public function assertMinArgs($value, $expectedMinArgs, $name = "")
+    /**
+     * @param array  $value
+     * @param int    $expectedMinArgs
+     * @param string $name
+     *
+     * @return array
+     * @throws \LesserPhp\Exception\GeneralException
+     */
+    public function assertMinArgs(array $value, $expectedMinArgs, $name = '')
     {
-        if ($value[0] !== "list" || $value[1] !== ",") {
-            throw new GeneralException("expecting list");
+        if ($value[0] !== 'list' || $value[1] !== ',') {
+            throw new GeneralException('expecting list');
         }
         $values = $value[2];
         $numValues = count($values);
         if ($expectedMinArgs > $numValues) {
             if ($name) {
-                $name .= ": ";
+                $name .= ': ';
             }
 
             throw new GeneralException("${name}expecting at least $expectedMinArgs arguments, got $numValues");

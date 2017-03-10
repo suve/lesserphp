@@ -167,17 +167,23 @@ class Coerce
     ];
 
 
-    // coerce a value for use in color operation
-    public function coerceColor($value)
+    /**
+     * coerce a value for use in color operation
+     *
+     * @param array $value
+     *
+     * @return array|null
+     */
+    public function coerceColor(array $value)
     {
         switch ($value[0]) {
             case 'color':
                 return $value;
             case 'raw_color':
-                $c = ["color", 0, 0, 0];
-                $colorStr = substr($value[1], 1);
+                $c = ['color', 0, 0, 0];
+                $colorStr = mb_substr($value[1], 1);
                 $num = hexdec($colorStr);
-                $width = strlen($colorStr) === 3 ? 16 : 256;
+                $width = mb_strlen($colorStr) === 3 ? 16 : 256;
 
                 for ($i = 3; $i > 0; $i--) { // 3 2 1
                     $t = $num % $width;
@@ -204,14 +210,20 @@ class Coerce
         return null;
     }
 
-    // make something string like into a string
-    public function coerceString($value)
+    /**
+     * make something string like into a string
+     *
+     * @param array $value
+     *
+     * @return array|null
+     */
+    public function coerceString(array $value)
     {
         switch ($value[0]) {
-            case "string":
+            case 'string':
                 return $value;
-            case "keyword":
-                return ["string", "", [$value[1]]];
+            case 'keyword':
+                return ['string', '', [$value[1]]];
         }
 
         return null;

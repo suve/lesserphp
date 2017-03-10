@@ -442,7 +442,7 @@ class Compiler
 
     /**
      * @param $block
-     * @param $out
+     * @param \stdClass $out
      *
      * @throws \LesserPhp\Exception\GeneralException
      */
@@ -1674,7 +1674,7 @@ class Compiler
     }
 
     /**
-     * @param      $parent
+     * @param \LesserPhp\NodeEnv $parent
      * @param null $block
      *
      * @return \LesserPhp\NodeEnv

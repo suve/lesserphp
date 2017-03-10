@@ -79,6 +79,10 @@ class NodeEnv
         $this->store = $store;
     }
 
+    /**
+     * @param string $index
+     * @param $value
+     */
     public function addStore($index, $value)
     {
         $this->store[$index] = $value;
@@ -146,13 +150,9 @@ class NodeEnv
     }
 
     /**
-     * @param array|null $imports
+     * @param string $index
+     * @param $value
      */
-    public function setImports($imports)
-    {
-        $this->imports = $imports;
-    }
-
     public function addImports($index, $value)
     {
         $this->imports[$index] = $value;

@@ -138,7 +138,7 @@ class Converter
      * @param int $max
      * @param int $min
      *
-     * @return mixed
+     * @return int
      */
     public function clamp($v, $max = 1, $min = 0)
     {
