@@ -19,7 +19,6 @@ use LesserPhp\Exception\GeneralException;
  */
 class Parser
 {
-
     protected static $nextBlockId = 0; // used to uniquely identify blocks
 
     protected static $precedence = [
@@ -126,7 +125,7 @@ class Parser
     /**
      * @param string $buffer
      *
-     * @return mixed
+     * @return Block
      * @throws \LesserPhp\Exception\GeneralException
      */
     public function parse($buffer)
@@ -403,7 +402,7 @@ nav ul {
     /**
      * @param array $tags
      *
-     * @return mixed
+     * @return array
      */
     protected function fixTags(array $tags)
     {
@@ -1761,36 +1760,16 @@ nav ul {
     }
 
     /**
-     * @param null $selectors
-     * @param null $type
+     * @param array|null  $selectors
+     * @param string|null $type
      *
-     * @return \stdClass
+     * @return Block
      */
-    protected function pushBlock($selectors = null, $type = null)
+    protected function pushBlock(array $selectors = null, $type = null)
     {
-        $b = new \stdClass();
-        $b->parent = $this->env;
+        $this->env = Block::factory($this, self::$nextBlockId++, $this->count, $type, $selectors, $this->env);
 
-        $b->type = $type;
-        $b->id = self::$nextBlockId++;
-
-        $b->isVararg = false; // TODO: kill me from here
-        $b->tags = $selectors;
-
-        $b->props = [];
-        $b->children = [];
-
-        // add a reference to the parser so
-        // we can access the parser to throw errors
-        // or retrieve the sourceName of this block.
-        $b->parser = $this;
-
-        // so we know the position of this block
-        $b->count = $this->count;
-
-        $this->env = $b;
-
-        return $b;
+        return $this->env;
     }
 
     /**
@@ -1798,7 +1777,7 @@ nav ul {
      *
      * @param string $type
      *
-     * @return \stdClass
+     * @return Block|Block\Directive|Block\Media
      */
     protected function pushSpecialBlock($type)
     {
@@ -1984,9 +1963,14 @@ nav ul {
     protected function handleRulesetDefinition($directiveName)
     {
         //Ruleset Definition
-        // seriously, this || true is required for this statement to work!?
-        if (($this->openString('{', $directiveValue, null, [';']) || true) && $this->literal('{')) {
-            $dir = $this->pushBlock($this->fixTags(['@' . $directiveName]));
+        $this->openString('{', $directiveValue, null, [';']);
+
+        if ($this->literal('{')) {
+            $dir = $this->pushBlock($this->fixTags(['@' . $directiveName]), 'ruleset');
+            if (!$dir instanceof Block\Ruleset) {
+                throw new \RuntimeException('Block factory did not produce a Ruleset');
+            }
+
             $dir->name = $directiveName;
             if ($directiveValue !== null) {
                 $dir->value = $directiveValue;

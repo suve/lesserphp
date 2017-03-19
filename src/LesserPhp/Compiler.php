@@ -318,11 +318,11 @@ class Compiler
      *
      * See lessc::compileProp()
      *
-     * @param $block
+     * @param Block $block
      *
      * @throws \LesserPhp\Exception\GeneralException
      */
-    protected function compileBlock($block)
+    protected function compileBlock(Block $block)
     {
         switch ($block->type) {
             case "root":
@@ -348,11 +348,11 @@ class Compiler
     }
 
     /**
-     * @param $block
+     * @param Block $block
      *
      * @throws \LesserPhp\Exception\GeneralException
      */
-    protected function compileCSSBlock($block)
+    protected function compileCSSBlock(Block $block)
     {
         $env = $this->pushEnv($this->env);
 
@@ -368,9 +368,9 @@ class Compiler
     }
 
     /**
-     * @param $media
+     * @param Block\Media $media
      */
-    protected function compileMedia($media)
+    protected function compileMedia(Block\Media $media)
     {
         $env = $this->pushEnv($this->env, $media);
         $parentScope = $this->mediaParent($this->scope);
@@ -414,10 +414,10 @@ class Compiler
     }
 
     /**
-     * @param          $block
+     * @param Block    $block
      * @param string[] $selectors
      */
-    protected function compileNestedBlock($block, array $selectors)
+    protected function compileNestedBlock(Block $block, array $selectors)
     {
         $this->pushEnv($this->env, $block);
         $this->scope = $this->makeOutputBlock($block->type, $selectors);
@@ -430,9 +430,9 @@ class Compiler
     }
 
     /**
-     * @param $root
+     * @param Block $root
      */
-    protected function compileRoot($root)
+    protected function compileRoot(Block $root)
     {
         $this->pushEnv($this->env);
         $this->scope = $this->makeOutputBlock($root->type);
@@ -441,12 +441,12 @@ class Compiler
     }
 
     /**
-     * @param $block
+     * @param Block $block
      * @param \stdClass $out
      *
      * @throws \LesserPhp\Exception\GeneralException
      */
-    protected function compileProps($block, $out)
+    protected function compileProps(Block $block, $out)
     {
         foreach ($this->sortProps($block->props) as $prop) {
             $this->compileProp($prop, $block, $out);
@@ -958,12 +958,12 @@ class Compiler
      * compile a prop and update $lines or $blocks appropriately
      *
      * @param $prop
-     * @param $block
+     * @param Block $block
      * @param $out
      *
      * @throws \LesserPhp\Exception\GeneralException
      */
-    protected function compileProp($prop, $block, $out)
+    protected function compileProp($prop, Block $block, $out)
     {
         // set error position context
         $this->sourceLoc = isset($prop[-1]) ? $prop[-1] : -1;
@@ -1675,11 +1675,11 @@ class Compiler
 
     /**
      * @param \LesserPhp\NodeEnv $parent
-     * @param null $block
+     * @param Block|null $block
      *
      * @return \LesserPhp\NodeEnv
      */
-    protected function pushEnv($parent, $block = null)
+    protected function pushEnv($parent, Block $block = null)
     {
         $e = new NodeEnv();
         $e->setParent($parent);
