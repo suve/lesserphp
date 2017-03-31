@@ -43,7 +43,7 @@ class Block
     public $tags;
 
     /**
-     * @var array
+     * @var Property[]
      */
     public $props = [];
 

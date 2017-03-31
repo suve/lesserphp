@@ -83,7 +83,7 @@ class Parser
     /** @var string */
     public $buffer;
 
-    /** @var mixed $env Block Stack */
+    /** @var Block|null $env Block Stack */
     private $env;
     /** @var bool */
     private $inExp;
@@ -1795,13 +1795,16 @@ nav ul {
         if ($pos !== null) {
             $prop[-1] = $pos;
         }
-        $this->env->props[] = $prop;
+
+        $property = Property::factoryFromOldFormat($prop, $pos);
+
+        $this->env->props[] = $property;
     }
 
     /**
      * pop something off the stack
      *
-     * @return mixed
+     * @return Block
      */
     protected function pop()
     {
