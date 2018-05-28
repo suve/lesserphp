@@ -51,6 +51,12 @@ div {
 pre {
 	color: @someValue;
 }
+blockquote {
+	color: @someOtherValue;
+}
 
 @import "file3";
+@someOtherValue: hello-from-imports-file;
 
+@dynamicImport: "file4";
+@import @dynamicImport;
