@@ -668,7 +668,7 @@ class lessc {
 
 		// check for a rest
 		$last = end($args);
-		if ($last[0] == "rest") {
+        if ($last !== false && $last[0] === "rest") {
 			$rest = array_slice($orderedValues, count($args) - 1);
 			$this->set($last[1], $this->reduce(array("list", " ", $rest)));
 		}
@@ -2052,7 +2052,7 @@ class lessc {
 		$this->pushEnv();
 		$parser = new lessc_parser($this, __METHOD__);
 		foreach ($args as $name => $strValue) {
-			if ($name{0} != '@') $name = '@'.$name;
+			if ($name[0] != '@') $name = '@'.$name;
 			$parser->count = 0;
 			$parser->buffer = (string)$strValue;
 			if (!$parser->propertyValue($value)) {
