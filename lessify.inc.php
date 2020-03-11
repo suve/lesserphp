@@ -69,14 +69,18 @@ class tagparse extends easyparse {
 	static private $combinators = null;
 	static private $match_opts = null;
 
-	public function parse() {
+	public function __construct($str) {
+		parent::__construct($str);
+
 		if (empty(self::$combinators)) {
 			self::$combinators = '('.implode('|', array_map(array($this, 'preg_quote'),
 				array('+', '>', '~'))).')';
 			self::$match_opts = '('.implode('|', array_map(array($this, 'preg_quote'),
 				array('=', '~=', '|=', '$=', '*='))).')';
 		}
+	}
 
+	public function parse() {
 		// crush whitespace
 		$this->buffer = preg_replace('/\s+/', ' ', $this->buffer).' ';
 
